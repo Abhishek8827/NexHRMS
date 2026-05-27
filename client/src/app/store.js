@@ -8,6 +8,8 @@ import recruitmentReducer from '../features/recruitment/recruitmentSlice';
 import taskReducer from '../features/tasks/taskSlice';
 import notificationReducer from '../features/notifications/notificationSlice';
 import performanceReducer from '../features/performance/performanceSlice';
+import complaintReducer from '../features/complaints/complaintSlice';
+import reimbursementReducer from '../features/reimbursements/reimbursementSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +22,8 @@ export const store = configureStore({
     tasks: taskReducer,
     notifications: notificationReducer,
     performance: performanceReducer,
+    complaints: complaintReducer,
+    reimbursements: reimbursementReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
