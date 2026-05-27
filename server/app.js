@@ -28,7 +28,28 @@ const app = express();
 app.use(helmet());
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://nexhr-api.vercel.app'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:4173',
+      process.env.CLIENT_URL,
+    ].filter(Boolean);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // In production, also allow any vercel.app subdomain
+      if (process.env.NODE_ENV === 'production' && origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`));
+      }
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
