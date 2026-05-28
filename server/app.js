@@ -26,33 +26,35 @@ const app = express();
 
 // ── Security ──────────────────────────────────────────────
 app.use(helmet());
-
+app.options('*', cors()); 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = [
+    const allowed = [
       'http://localhost:5173',
       'http://localhost:3000',
       'http://localhost:4173',
       process.env.CLIENT_URL,
     ].filter(Boolean);
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // In production, also allow any vercel.app subdomain
-      if (process.env.NODE_ENV === 'production' && origin.endsWith('.vercel.app')) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS blocked: ${origin}`));
-      }
+    // Allow exact match
+    if (allowed.includes(origin)) {
+      return callback(null, true);
     }
+
+    // Allow ANY vercel.app subdomain in production
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Block everything else
+    return callback(new Error('CORS blocked: ' + origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200, // fixes some preflight issues on older browsers
 }));
 
 // ── Parsing ───────────────────────────────────────────────
@@ -76,6 +78,7 @@ app.get('/health', (req, res) => {
 });
 
 // ── API Routes ────────────────────────────────────────────
+
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/employees', employeeRoutes);
 app.use('/api/v1/attendance', attendanceRoutes);
