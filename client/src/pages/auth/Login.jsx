@@ -41,7 +41,7 @@ const DEMO_ACCOUNTS = [
     role: "HR",
     icon: Users,
     email: "hr@nexhr.com",
-    password: "Hr@123456",
+    password: "Admin@123456",
     desc: "HR management",
     color:
       "border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20",
@@ -52,7 +52,7 @@ const DEMO_ACCOUNTS = [
     role: "Manager",
     icon: Briefcase,
     email: "manager@nexhr.com",
-    password: "Manager@123456",
+    password: "Admin@123456",
     desc: "Team management",
     color:
       "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20",
@@ -63,8 +63,8 @@ const DEMO_ACCOUNTS = [
   {
     role: "Employee",
     icon: User,
-    email: "employee@nexhr.com",
-    password: "Employee@123456",
+    email: "emp-22@nexhr.com",
+    password: "Admin@123456",
     desc: "Self-service",
     color:
       "border-orange-200 bg-orange-50 hover:bg-orange-100 dark:border-orange-800 dark:bg-orange-900/20",
