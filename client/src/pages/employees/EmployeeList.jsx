@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import useAuth from "../../hooks/useAuth";
 import {
   Users,
   Plus,
@@ -37,6 +38,7 @@ const ROLE_OPTIONS = ["all", "admin", "hr", "manager", "employee"];
 const EmployeeList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isAdminOrHR } = useAuth();
   const { list, pagination, departments, loading } = useSelector(
     (s) => s.employees,
   );
@@ -349,15 +351,18 @@ const EmployeeList = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1">
-                            <button
-                              onClick={() =>
-                                navigate(`/employees/${emp._id}/edit`)
-                              }
-                              className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
+                            {/* FIX: Only Admin and HR can edit employees */}
+                            {isAdminOrHR && (
+                              <button
+                                onClick={() =>
+                                  navigate(`/employees/${emp._id}/edit`)
+                                }
+                                className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            )}
                             {emp.status === "active" && (
                               <button
                                 onClick={() =>

@@ -8,7 +8,7 @@ export const fetchMyReimbursements = createAsyncThunk(
       const res = await api.get('/reimbursements/my');
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed');
     }
   }
 );
@@ -20,7 +20,7 @@ export const fetchAllReimbursements = createAsyncThunk(
       const res = await api.get('/reimbursements', { params });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed');
     }
   }
 );
@@ -32,7 +32,7 @@ export const createReimbursement = createAsyncThunk(
       const res = await api.post('/reimbursements', data);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed');
     }
   }
 );
@@ -46,7 +46,7 @@ export const updateReimbursementStatus = createAsyncThunk(
       });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed');
     }
   }
 );
@@ -62,9 +62,7 @@ const reimbursementSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMyReimbursements.pending, (state) => {
-        state.loading = true;
-      })
+      .addCase(fetchMyReimbursements.pending, (state) => { state.loading = true; })
       .addCase(fetchMyReimbursements.fulfilled, (state, action) => {
         state.loading = false;
         state.myList = action.payload;
@@ -73,9 +71,7 @@ const reimbursementSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(fetchAllReimbursements.pending, (state) => {
-        state.loading = true;
-      })
+      .addCase(fetchAllReimbursements.pending, (state) => { state.loading = true; })
       .addCase(fetchAllReimbursements.fulfilled, (state, action) => {
         state.loading = false;
         state.allList = action.payload;

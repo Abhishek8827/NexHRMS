@@ -8,7 +8,7 @@ export const fetchComplaints = createAsyncThunk(
       const res = await api.get('/complaints');
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch');
     }
   }
 );
@@ -20,7 +20,7 @@ export const createComplaint = createAsyncThunk(
       const res = await api.post('/complaints', data);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed to create');
     }
   }
 );
@@ -34,7 +34,7 @@ export const updateComplaintStatus = createAsyncThunk(
       });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message);
+      return rejectWithValue(err.response?.data?.message || 'Failed to update');
     }
   }
 );
@@ -46,7 +46,9 @@ const complaintSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    clearComplaints: (state) => { state.list = []; },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchComplaints.pending, (state) => {
@@ -71,4 +73,5 @@ const complaintSlice = createSlice({
   },
 });
 
+export const { clearComplaints } = complaintSlice.actions;
 export default complaintSlice.reducer;

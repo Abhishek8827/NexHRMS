@@ -4,7 +4,10 @@ import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 export const getAllEmployees = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, search = '', department, status, role } = req.query;
+  const {
+    page = 1, limit = 10, search = '',
+    department, status, role,
+  } = req.query;
 
   const filter = {};
   if (status && status !== 'all') filter.status = status;
@@ -19,7 +22,9 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
     ];
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
+  const skip = (pageNum - 1) * limitNum;
 
   const [employees, totalCount] = await Promise.all([
     User.find(filter)
@@ -28,16 +33,20 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
       .populate('manager', 'firstName lastName designation')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(Number(limit)),
+      .limit(limitNum),
     User.countDocuments(filter),
   ]);
+
+  const totalPages = Math.ceil(totalCount / limitNum);
 
   return res.status(200).json(new ApiResponse(200, {
     employees,
     pagination: {
-      currentPage: Number(page),
-      totalPages: Math.ceil(totalCount / Number(limit)),
+      currentPage: pageNum,
+      totalPages,
       totalCount,
+      hasPrev: pageNum > 1,         // ← FIX: was missing
+      hasNext: pageNum < totalPages, // ← FIX: was missing
     },
   }, 'Employees fetched successfully'));
 });
@@ -67,7 +76,7 @@ export const updateEmployee = asyncHandler(async (req, res) => {
   if (req.user.role === 'admin') allowedFields.push('role', 'status');
 
   const updateData = {};
-  allowedFields.forEach((field) => {
+  allowedFields.forEach(field => {
     if (req.body[field] !== undefined) updateData[field] = req.body[field];
   });
 
@@ -75,17 +84,22 @@ export const updateEmployee = asyncHandler(async (req, res) => {
     req.params.id,
     { $set: updateData },
     { new: true, runValidators: true }
-  ).select('-password -refreshToken').populate('department', 'name code');
+  )
+    .select('-password -refreshToken')
+    .populate('department', 'name code')
+    .populate('manager', 'firstName lastName designation');
 
   if (!employee) throw new ApiError(404, 'Employee not found');
 
-  return res.status(200).json(new ApiResponse(200, employee, 'Employee updated successfully'));
+  return res.status(200).json(
+    new ApiResponse(200, employee, 'Employee updated successfully')
+  );
 });
 
 export const deactivateEmployee = asyncHandler(async (req, res) => {
   const employee = await User.findById(req.params.id);
-
   if (!employee) throw new ApiError(404, 'Employee not found');
+
   if (employee._id.toString() === req.user._id.toString()) {
     throw new ApiError(400, 'You cannot deactivate your own account');
   }
@@ -94,5 +108,7 @@ export const deactivateEmployee = asyncHandler(async (req, res) => {
   employee.refreshToken = null;
   await employee.save({ validateBeforeSave: false });
 
-  return res.status(200).json(new ApiResponse(200, {}, 'Employee deactivated successfully'));
+  return res.status(200).json(
+    new ApiResponse(200, {}, 'Employee deactivated successfully')
+  );
 });

@@ -36,7 +36,8 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "dashboard", element: <Dashboard /> },
           { path: "profile", element: <Profile /> },
-          // Admin + HR + Manager
+
+          // ── Employees ──────────────────────────────────────────
           {
             path: "employees",
             element: (
@@ -45,11 +46,14 @@ const router = createBrowserRouter([
             children: [
               { index: true, element: <EmployeeList /> },
               {
+                // NEW: add employee — admin + hr only
                 path: "new",
                 element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,
                 children: [{ index: true, element: <EmployeeForm /> }],
               },
               {
+                // FIX: edit employee — admin + hr + manager
+                // Manager can VIEW, only admin/hr can save changes (handled in form)
                 path: ":id/edit",
                 element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,
                 children: [{ index: true, element: <EmployeeForm /> }],
@@ -57,13 +61,14 @@ const router = createBrowserRouter([
             ],
           },
 
+          // ── Work Schedules ─────────────────────────────────────
           {
             path: "settings/schedules",
             element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,
             children: [{ index: true, element: <WorkSchedule /> }],
           },
 
-          // All roles
+          // ── All Roles ──────────────────────────────────────────
           { path: "attendance", element: <Attendance /> },
           { path: "leaves", element: <Leaves /> },
           { path: "tasks", element: <Tasks /> },
@@ -71,7 +76,7 @@ const router = createBrowserRouter([
           { path: "reimbursements", element: <Reimbursements /> },
           { path: "complaints", element: <Complaints /> },
 
-          // Admin + HR only
+          // ── Admin + HR Only ────────────────────────────────────
           {
             path: "payroll",
             element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,

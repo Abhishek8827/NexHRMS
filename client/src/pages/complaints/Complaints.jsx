@@ -2,13 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
-import {
-  MessageSquare,
-  Plus,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-} from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
+import { useForm } from "react-hook-form";
 import {
   fetchComplaints,
   createComplaint,
@@ -21,7 +16,6 @@ import Badge from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import useAuth from "../../hooks/useAuth";
 import { formatDate } from "../../utils/helpers";
-import { useForm } from "react-hook-form";
 
 const CATEGORIES = [
   "harassment",
@@ -41,9 +35,16 @@ const statusColor = {
   closed: "gray",
 };
 
+const priorityColor = {
+  low: "gray",
+  medium: "yellow",
+  high: "orange",
+  critical: "red",
+};
+
 const Complaints = () => {
   const dispatch = useDispatch();
-  const { isAdminOrHR } = useAuth();
+  const { isAdminOrHR, isManager } = useAuth();
   const { list, loading } = useSelector((s) => s.complaints);
 
   const [showModal, setShowModal] = useState(false);
@@ -52,20 +53,28 @@ const Complaints = () => {
     complaint: null,
   });
   const [resolution, setResolution] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
-  } = useForm();
+    formState: { errors, isSubmitting },
+  } = useForm({ defaultValues: { priority: "medium" } });
 
+  // ── Fetch on mount ──────────────────────────────────────
   useEffect(() => {
     dispatch(fetchComplaints());
   }, [dispatch]);
 
+  // ── Submit new complaint ────────────────────────────────
   const onSubmit = async (data) => {
-    const res = await dispatch(createComplaint(data));
+    const payload = {
+      ...data,
+      isAnonymous: Boolean(data.isAnonymous),
+    };
+
+    const res = await dispatch(createComplaint(payload));
     if (!res.error) {
       toast.success("Complaint submitted successfully");
       setShowModal(false);
@@ -75,16 +84,20 @@ const Complaints = () => {
     }
   };
 
-  const handleResolve = async (status) => {
+  // ── Update status (HR/Admin) ────────────────────────────
+  const handleStatusUpdate = async (status) => {
+    setUpdatingStatus(true);
     const res = await dispatch(
       updateComplaintStatus({
         id: resolveModal.complaint._id,
         status,
-        resolution,
+        resolution: resolution || undefined,
       }),
     );
+    setUpdatingStatus(false);
+
     if (!res.error) {
-      toast.success("Complaint status updated");
+      toast.success(`Complaint marked as: ${status.replace(/-/g, " ")}`);
       setResolveModal({ open: false, complaint: null });
       setResolution("");
     } else {
@@ -92,8 +105,18 @@ const Complaints = () => {
     }
   };
 
+  // ── Stats ───────────────────────────────────────────────
+  const stats = {
+    open: list.filter((c) => c.status === "open").length,
+    inReview: list.filter((c) => c.status === "under-review").length,
+    resolved: list.filter((c) => c.status === "resolved").length,
+  };
+
+  const canManage = isAdminOrHR || isManager;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -113,26 +136,26 @@ const Complaints = () => {
         {[
           {
             label: "Open",
-            value: list.filter((c) => c.status === "open").length,
+            value: stats.open,
             color:
-              "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+              "text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
           },
           {
             label: "Under Review",
-            value: list.filter((c) => c.status === "under-review").length,
+            value: stats.inReview,
             color:
-              "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
+              "text-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400",
           },
           {
             label: "Resolved",
-            value: list.filter((c) => c.status === "resolved").length,
+            value: stats.resolved,
             color:
-              "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
+              "text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400",
           },
         ].map((s) => (
           <div key={s.label} className={`${s.color} rounded-xl p-4`}>
             <p className="text-2xl font-bold">{s.value}</p>
-            <p className="text-sm font-medium">{s.label}</p>
+            <p className="text-sm font-medium mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -145,63 +168,99 @@ const Complaints = () => {
           </div>
         ) : list.length === 0 ? (
           <div className="p-12 text-center">
-            <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
             <p className="text-gray-500 dark:text-gray-400">
               No complaints raised yet
             </p>
+            <Button
+              className="mt-4"
+              variant="secondary"
+              onClick={() => setShowModal(true)}
+            >
+              <Plus className="w-4 h-4" /> Raise First Complaint
+            </Button>
           </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {list.map((c, i) => (
               <motion.div
                 key={c._id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <div className="flex-1 min-w-0">
+                    {/* Meta */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
                       <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded capitalize">
                         {c.category?.replace(/-/g, " ")}
                       </span>
                       <Badge color={statusColor[c.status] || "gray"}>
-                        {c.status}
+                        {c.status?.replace(/-/g, " ")}
                       </Badge>
-                      <span className="text-xs text-gray-400">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded font-medium ${
+                          c.priority === "critical"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : c.priority === "high"
+                              ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                              : c.priority === "medium"
+                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                        }`}
+                      >
+                        {c.priority}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         {formatDate(c.createdAt)}
                       </span>
                     </div>
-                    <p className="font-medium text-gray-900 dark:text-white">
+
+                    {/* Subject */}
+                    <p className="font-semibold text-gray-900 dark:text-white">
                       {c.subject}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+
+                    {/* Description */}
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                       {c.description}
                     </p>
+
+                    {/* Resolution */}
                     {c.resolution && (
-                      <p className="text-sm text-green-600 mt-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
-                        <strong>Resolution:</strong> {c.resolution}
-                      </p>
+                      <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                        <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-0.5">
+                          Resolution
+                        </p>
+                        <p className="text-sm text-green-800 dark:text-green-300">
+                          {c.resolution}
+                        </p>
+                      </div>
                     )}
-                    {isAdminOrHR && c.raisedBy && (
-                      <p className="text-xs text-gray-400 mt-2">
+
+                    {/* Raised by (for HR/Admin) */}
+                    {canManage && c.raisedBy && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         Raised by: {c.raisedBy.firstName} {c.raisedBy.lastName}
                         {c.raisedBy.employeeId && ` (${c.raisedBy.employeeId})`}
                       </p>
                     )}
                   </div>
+
+                  {/* Action button for HR/Admin */}
                   {isAdminOrHR &&
-                    c.status !== "resolved" &&
-                    c.status !== "closed" && (
+                    !["resolved", "closed"].includes(c.status) && (
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() =>
-                          setResolveModal({ open: true, complaint: c })
-                        }
+                        onClick={() => {
+                          setResolveModal({ open: true, complaint: c });
+                          setResolution(c.resolution || "");
+                        }}
                       >
-                        Update
+                        Update Status
                       </Button>
                     )}
                 </div>
@@ -211,7 +270,7 @@ const Complaints = () => {
         )}
       </div>
 
-      {/* Create Complaint Modal */}
+      {/* ── Create Complaint Modal ─────────────────────────── */}
       <Modal
         isOpen={showModal}
         onClose={() => {
@@ -219,6 +278,7 @@ const Complaints = () => {
           reset();
         }}
         title="Raise a Complaint"
+        size="md"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
@@ -226,23 +286,29 @@ const Complaints = () => {
               Category <span className="text-red-500">*</span>
             </label>
             <select
-              {...register("category", { required: true })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              {...register("category", { required: "Category is required" })}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Select category</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="capitalize">
-                  {c.replace(/-/g, " ")}
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat} className="capitalize">
+                  {cat.replace(/-/g, " ")}
                 </option>
               ))}
             </select>
+            {errors.category && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.category.message}
+              </p>
+            )}
           </div>
 
           <Input
             label="Subject"
             required
             placeholder="Brief subject of complaint"
-            {...register("subject", { required: true })}
+            error={errors.subject?.message}
+            {...register("subject", { required: "Subject is required" })}
           />
 
           <div>
@@ -250,11 +316,19 @@ const Complaints = () => {
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
-              {...register("description", { required: true })}
+              {...register("description", {
+                required: "Description is required",
+                minLength: { value: 10, message: "Min 10 characters required" },
+              })}
               rows={4}
               placeholder="Describe the issue in detail..."
               className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
             />
+            {errors.description && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -263,7 +337,7 @@ const Complaints = () => {
             </label>
             <select
               {...register("priority")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -272,18 +346,18 @@ const Complaints = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <input
               type="checkbox"
               id="isAnonymous"
               {...register("isAnonymous")}
-              className="rounded"
+              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
             <label
               htmlFor="isAnonymous"
-              className="text-sm text-gray-700 dark:text-gray-300"
+              className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
             >
-              Submit anonymously (your identity will be hidden)
+              Submit anonymously — your identity will be hidden from HR/Manager
             </label>
           </div>
 
@@ -305,68 +379,96 @@ const Complaints = () => {
         </form>
       </Modal>
 
-      {/* Update Status Modal — HR/Admin */}
+      {/* ── Update Status Modal (HR/Admin) ─────────────────── */}
       <Modal
         isOpen={resolveModal.open}
-        onClose={() => setResolveModal({ open: false, complaint: null })}
+        onClose={() => {
+          setResolveModal({ open: false, complaint: null });
+          setResolution("");
+        }}
         title="Update Complaint Status"
         size="sm"
       >
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-              {resolveModal.complaint?.subject}
-            </p>
-            <p className="text-xs text-gray-500">
-              {resolveModal.complaint?.description}
-            </p>
+        {resolveModal.complaint && (
+          <div className="space-y-4">
+            {/* Complaint summary */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge
+                  color={statusColor[resolveModal.complaint.status] || "gray"}
+                >
+                  {resolveModal.complaint.status}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  {resolveModal.complaint.category?.replace(/-/g, " ")}
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {resolveModal.complaint.subject}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                {resolveModal.complaint.description}
+              </p>
+            </div>
+
+            {/* Resolution notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Resolution / Action Notes
+              </label>
+              <textarea
+                rows={3}
+                value={resolution}
+                onChange={(e) => setResolution(e.target.value)}
+                placeholder="Describe the action taken or resolution provided..."
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+              />
+            </div>
+
+            {/* Status buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleStatusUpdate("under-review")}
+                disabled={updatingStatus}
+                className="px-3 py-2.5 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                Under Review
+              </button>
+              <button
+                onClick={() => handleStatusUpdate("action-taken")}
+                disabled={updatingStatus}
+                className="px-3 py-2.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                Action Taken
+              </button>
+              <button
+                onClick={() => handleStatusUpdate("resolved")}
+                disabled={updatingStatus}
+                className="px-3 py-2.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                ✓ Mark Resolved
+              </button>
+              <button
+                onClick={() => handleStatusUpdate("closed")}
+                disabled={updatingStatus}
+                className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                Close
+              </button>
+            </div>
+
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                setResolveModal({ open: false, complaint: null });
+                setResolution("");
+              }}
+            >
+              Cancel
+            </Button>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Resolution / Notes
-            </label>
-            <textarea
-              rows={3}
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              placeholder="Describe action taken or resolution..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleResolve("under-review")}
-              className="px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg text-sm font-medium"
-            >
-              Mark Under Review
-            </button>
-            <button
-              onClick={() => handleResolve("action-taken")}
-              className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium"
-            >
-              Action Taken
-            </button>
-            <button
-              onClick={() => handleResolve("resolved")}
-              className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium"
-            >
-              Mark Resolved
-            </button>
-            <button
-              onClick={() => handleResolve("closed")}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
-            >
-              Close Complaint
-            </button>
-          </div>
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => setResolveModal({ open: false, complaint: null })}
-          >
-            Cancel
-          </Button>
-        </div>
+        )}
       </Modal>
     </div>
   );
