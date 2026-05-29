@@ -96,7 +96,8 @@ const Login = () => {
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          © {new Date().getFullYear()} NexHR. All rights reserved.
+          © {new Date().getFullYear()} NexHR. All rights reserved. Developed by
+          "Abhishek Wani & Group"
         </p>
       </div>
     </div>
