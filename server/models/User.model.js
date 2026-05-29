@@ -31,7 +31,7 @@ const UserSchema = new Schema({
   avatar: { type: String, default: null },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'terminated'],
+  enum: ['active', 'inactive', 'terminated', 'on-notice'],
     default: 'active',
   },
   basicSalary: { type: Number, default: 0 },

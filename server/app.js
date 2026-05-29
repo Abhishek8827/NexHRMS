@@ -38,24 +38,25 @@ app.use(cors({
       process.env.CLIENT_URL,
     ].filter(Boolean);
 
-    // Allow exact match
-    if (allowed.includes(origin)) {
-      return callback(null, true);
-    }
+    if (allowed.includes(origin)) return callback(null, true);
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
 
-    // Allow ANY vercel.app subdomain in production
-    if (origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-
-    // Block everything else
     return callback(new Error('CORS blocked: ' + origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200, // fixes some preflight issues on older browsers
+  optionsSuccessStatus: 200,
 }));
+
+// Handle preflight for all routes
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // ── Parsing ───────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
