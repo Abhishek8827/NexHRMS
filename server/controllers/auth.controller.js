@@ -30,15 +30,29 @@ export const registerEmployee = asyncHandler(async (req, res) => {
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) throw new ApiError(400, 'Email and password are required');
+  if (!email || !password) {
+    throw new ApiError(400, 'Email and password are required');
+  }
 
-  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+  // Find user in MongoDB by email — includes password for comparison
+  const user = await User.findOne({ 
+    email: email.toLowerCase().trim() 
+  }).select('+password');
 
-  if (!user) throw new ApiError(401, 'Invalid email or password');
-  if (user.status !== 'active') throw new ApiError(403, 'Account deactivated. Contact HR.');
+  if (!user) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
 
+  if (user.status !== 'active') {
+    throw new ApiError(403, 'Account is deactivated. Contact HR.');
+  }
+
+  // Compare with bcrypt — no hardcoded passwords anywhere
   const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) throw new ApiError(401, 'Invalid email or password');
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
 
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
@@ -53,7 +67,12 @@ export const loginUser = asyncHandler(async (req, res) => {
     .select('-password -refreshToken')
     .populate('department', 'name code');
 
-  return res.status(200).json(new ApiResponse(200, { user: loggedInUser, accessToken }, 'Login successful'));
+  return res.status(200).json(
+    new ApiResponse(200, { 
+      user: loggedInUser, 
+      accessToken 
+    }, 'Login successful')
+  );
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {

@@ -73,11 +73,23 @@ export const updateEmployee = asyncHandler(async (req, res) => {
     'gender', 'address', 'emergencyContact', 'bankDetails', 'basicSalary',
   ];
 
-  if (req.user.role === 'admin') allowedFields.push('role', 'status');
+  if (req.user.role === 'admin') {
+    allowedFields.push('role', 'status');
+  }
 
   const updateData = {};
-  allowedFields.forEach(field => {
-    if (req.body[field] !== undefined) updateData[field] = req.body[field];
+
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
+    }
+  });
+
+  // Remove empty strings and nulls — they fail Mongoose validation
+  Object.keys(updateData).forEach((key) => {
+    if (updateData[key] === '' || updateData[key] === null) {
+      delete updateData[key];
+    }
   });
 
   const employee = await User.findByIdAndUpdate(
