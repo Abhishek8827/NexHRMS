@@ -39,16 +39,18 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
 
   const totalPages = Math.ceil(totalCount / limitNum);
 
-  return res.status(200).json(new ApiResponse(200, {
-    employees,
-    pagination: {
-      currentPage: pageNum,
-      totalPages,
-      totalCount,
-      hasPrev: pageNum > 1,         // ← FIX: was missing
-      hasNext: pageNum < totalPages, // ← FIX: was missing
-    },
-  }, 'Employees fetched successfully'));
+  return res.status(200).json(
+    new ApiResponse(200, {
+      employees,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        hasPrev: pageNum > 1,
+        hasNext: pageNum < totalPages,
+      },
+    }, 'Employees fetched successfully')
+  );
 });
 
 export const getEmployeeById = asyncHandler(async (req, res) => {
@@ -59,18 +61,24 @@ export const getEmployeeById = asyncHandler(async (req, res) => {
 
   if (!employee) throw new ApiError(404, 'Employee not found');
 
-  if (req.user.role === 'employee' && req.user._id.toString() !== req.params.id) {
+  if (
+    req.user.role === 'employee' &&
+    req.user._id.toString() !== req.params.id
+  ) {
     throw new ApiError(403, 'You can only view your own profile');
   }
 
-  return res.status(200).json(new ApiResponse(200, employee, 'Employee fetched'));
+  return res.status(200).json(
+    new ApiResponse(200, employee, 'Employee fetched')
+  );
 });
 
 export const updateEmployee = asyncHandler(async (req, res) => {
   const allowedFields = [
     'firstName', 'lastName', 'phone', 'designation',
     'department', 'manager', 'joiningDate', 'dateOfBirth',
-    'gender', 'address', 'emergencyContact', 'bankDetails', 'basicSalary',
+    'gender', 'address', 'emergencyContact', 'bankDetails',
+    'basicSalary',
   ];
 
   if (req.user.role === 'admin') {
@@ -78,14 +86,13 @@ export const updateEmployee = asyncHandler(async (req, res) => {
   }
 
   const updateData = {};
-
   allowedFields.forEach((field) => {
     if (req.body[field] !== undefined) {
       updateData[field] = req.body[field];
     }
   });
 
-  // Remove empty strings and nulls — they fail Mongoose validation
+  // Remove empty strings — they fail enum/required validation
   Object.keys(updateData).forEach((key) => {
     if (updateData[key] === '' || updateData[key] === null) {
       delete updateData[key];

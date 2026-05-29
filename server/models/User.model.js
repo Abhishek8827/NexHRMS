@@ -54,13 +54,6 @@ UserSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// UserSchema.pre('save', async function (next) {
-//   if (!this.isModified('password')) return next();
-//   this.password = await bcrypt.hash(this.password, 12);
-//   next();
-// });
-
-
 UserSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
 
