@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getCurrentUser } from "./features/auth/authSlice";
 import Spinner from "./components/common/Spinner";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const AuthLoader = ({ children }) => {
   const dispatch = useDispatch();
@@ -55,7 +54,6 @@ function AppLoaderWrapper() {
           error: { style: { background: "#dc2626" } },
         }}
       />
-      <SpeedInsights />;
     </>
   );
 }
