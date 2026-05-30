@@ -98,10 +98,32 @@ const navItems = [
   },
 ];
 
-const Sidebar = ({ collapsed, onToggle }) => {
-  //   const { user, isAdmin, isHR } = useAuth();
-  const { user } = useAuth();
+// Role-based accent colors — each role gets its own identity
+const roleConfig = {
+  admin: {
+    gradient: "from-violet-500 to-indigo-600",
+    badge: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+    label: "Super Admin",
+  },
+  hr: {
+    gradient: "from-blue-500 to-cyan-500",
+    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    label: "HR Manager",
+  },
+  manager: {
+    gradient: "from-emerald-500 to-teal-500",
+    badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    label: "Team Manager",
+  },
+  employee: {
+    gradient: "from-orange-500 to-amber-500",
+    badge: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+    label: "Employee",
+  },
+};
 
+const Sidebar = ({ collapsed, onToggle }) => {
+  const { user } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -114,31 +136,51 @@ const Sidebar = ({ collapsed, onToggle }) => {
     item.roles.includes(user?.role),
   );
 
+  // Get role config — fallback to employee if unknown
+  const rc = roleConfig[user?.role] || roleConfig.employee;
+
   return (
     <aside
       className={clsx(
-        "fixed left-0 top-0 h-full bg-gray-900 text-white flex flex-col transition-all duration-300 z-40",
+        "fixed left-0 top-0 h-full flex flex-col transition-all duration-300 z-40",
+        "bg-gray-900 border-r border-gray-800",
         collapsed ? "w-16" : "w-64",
       )}
     >
-      {/* Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
+      {/* ── Logo ─────────────────────────────────────────── */}
+      <div
+        className={clsx(
+          "flex items-center h-16 px-4 border-b border-gray-800",
+          collapsed ? "justify-center" : "justify-between",
+        )}
+      >
+        <div className="flex items-center gap-2.5">
+          {/* Logo icon — uses role gradient */}
+          <div
+            className={clsx(
+              "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
+              `bg-gradient-to-br ${rc.gradient}`,
+            )}
+          >
+            <Building2 className="w-4 h-4 text-white" />
+          </div>
+
+          {!collapsed && (
+            <div className="leading-none">
+              <span className="font-bold text-white text-base tracking-tight">
+                NexHR
+              </span>
+              <p className="text-gray-500 text-[10px] mt-0.5">HR Management</p>
             </div>
-            <span className="font-bold text-lg">NexHR</span>
-          </div>
-        )}
-        {collapsed && (
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center mx-auto">
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
-        )}
+          )}
+        </div>
+
         <button
           onClick={onToggle}
-          className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 ml-auto"
+          className={clsx(
+            "p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors",
+            collapsed && "mx-auto mt-1",
+          )}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -148,18 +190,34 @@ const Sidebar = ({ collapsed, onToggle }) => {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2">
+      {/* ── Role Badge (only when expanded) ──────────────── */}
+      {!collapsed && (
+        <div className="px-3 pt-3 pb-2">
+          <span
+            className={clsx(
+              "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border",
+              rc.badge,
+            )}
+          >
+            {rc.label}
+          </span>
+        </div>
+      )}
+
+      {/* ── Navigation ───────────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
         {filteredNav.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
               clsx(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
+                collapsed && "justify-center",
                 isActive
-                  ? "bg-primary-600 text-white"
-                  : "text-gray-400 hover:bg-gray-700 hover:text-white",
+                  ? `bg-gradient-to-r ${rc.gradient} text-white shadow-lg shadow-black/20`
+                  : "text-gray-400 hover:bg-gray-800 hover:text-white",
               )
             }
           >
@@ -171,31 +229,51 @@ const Sidebar = ({ collapsed, onToggle }) => {
         ))}
       </nav>
 
-      {/* User Profile */}
-      <div className="p-4 border-t border-gray-700">
+      {/* ── User Profile ─────────────────────────────────── */}
+      <div className="p-3 border-t border-gray-800">
         <div
           className={clsx(
             "flex items-center gap-3",
-            collapsed && "justify-center",
+            collapsed && "flex-col gap-2",
           )}
         >
-          <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+          {/* Avatar — uses role gradient */}
+          <div
+            className={clsx(
+              "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
+              "text-xs font-bold text-white",
+              `bg-gradient-to-br ${rc.gradient}`,
+            )}
+          >
             {getInitials(user?.firstName, user?.lastName)}
           </div>
+
           {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
-            </div>
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate leading-tight">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
           )}
-          {!collapsed && (
+
+          {/* Logout button visible in collapsed state too */}
+          {collapsed && (
             <button
               onClick={handleLogout}
-              className="p-1 hover:text-red-400 text-gray-400"
+              title="Sign out"
+              className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
