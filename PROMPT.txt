@@ -1,0 +1,362 @@
+You are continuing my EXISTING MERN Stack HRMS SaaS project called NexHR.
+
+CURRENT PROJECT STATUS
+> Backend Progress:
+[✓] MongoDB Atlas connected
+[✓] Express backend running
+[✓] JWT authentication working
+[✓] Admin login API working
+
+> Frontend Progress:
+[✓] React app created
+[✓] Tailwind configured
+[✓] Redux store configured
+[✓] Axios API service configured
+
+> Pending Core Frontend Work:
+[ ] Frontend app routing
+[ ] Login page UI
+[ ] Dashboard layout
+[ ] Protected routes
+[ ] Employee management UI
+
+IMPORTANT:
+This project is already partially working.
+You are NOT starting from scratch.
+Your task is to CONTINUE the existing codebase professionally and gradually transform it into a REALISTIC, PRODUCTION-READY, SELLABLE HRMS SaaS platform.
+
+
+IMPORTANT DEVELOPMENT APPROACH
+You MUST follow a PHASE-BASED development workflow.
+Do NOT jump randomly between modules.
+Do NOT build everything at once.
+Do NOT rewrite stable working systems.
+
+Always:
+1. Analyze current codebase first
+2. Understand existing architecture
+3. Reuse existing code where possible
+4. Improve incrementally
+5. Keep application runnable after every step
+6. Finish current phase before moving to next phase
+
+Think like:
+- Senior MERN Stack Engineer
+- Enterprise SaaS Architect
+- Production Frontend Engineer
+- RBAC Workflow Designer
+- Scalable System Engineer
+
+
+PRIMARY GOAL
+Build a realistic enterprise HRMS SaaS platform similar to:
+- Zoho People
+- Keka
+- BambooHR
+- Darwinbox
+
+The application must feel:
+- scalable
+- modern
+- production-ready
+- enterprise-grade
+- realistic
+- maintainable
+
+
+NON-NEGOTIABLE RULES
+DO NOT:
+- regenerate the entire project
+- replace stable authentication
+- create fake UI placeholders
+- generate disconnected components
+- create non-functional buttons
+- leave broken routes
+- add unnecessary files
+- create duplicate logic
+- overengineer architecture
+- add unrealistic features
+
+EVERY visible feature must work:
+- routes
+- buttons
+- forms
+- API calls
+- tables
+- filters
+- dropdowns
+- modals
+- pagination
+- navigation
+- protected routes
+
+If UI exists:
+it must be functional.
+
+ROLE HIERARCHY
+
+Enterprise role hierarchy:
+Admin
+↓
+HR Manager
+↓
+Manager
+↓
+Employee
+
+
+RBAC SYSTEM
+ADMIN:
+- full company visibility
+- analytics access
+- payroll visibility
+- attendance monitoring
+- employee monitoring
+- create HR managers
+- manage settings
+
+HR MANAGER:
+- manage employees/managers
+- payroll workflows
+- attendance management
+- leave approvals
+- onboarding/offboarding
+
+MANAGER:
+- manage own team only
+- approve employee leave
+- assign tasks
+- monitor attendance
+
+EMPLOYEE:
+- self profile access
+- attendance marking
+- leave requests
+- reimbursement requests
+- complaint submission
+- payslip access
+
+
+WORKFLOW APPROVAL SYSTEM
+Employee Requests:
+Employee
+→ Manager Approval
+→ HR Approval
+→ Admin Monitoring
+
+Manager Requests:
+Manager
+→ HR Approval
+→ Admin Monitoring
+
+HR Requests:
+HR
+→ Admin Approval
+
+Apply this workflow to:
+- leaves
+- reimbursements
+- complaints
+- attendance corrections
+- performance reviews
+
+
+PHASE-BASED IMPLEMENTATION FLOW make according to you 
+FIX NEED:
+- frontend routing
+- nested layouts
+- sidebar architecture
+- protected routes
+- role-based navigation
+- login page UI
+- dashboard base layout
+- Redux/API synchronization
+- loading states
+- error handling
+
+After Phase :
+- app routing must work
+- sidebar must work
+- login flow must work
+- layouts must work
+- protected routes must work
+- navigation must work
+
+DO NOT move ahead until Phase 1 is stable.
+
+PHASE — ROLE-BASED DASHBOARDS
+Build separate dashboards for:
+- Admin
+- HR Manager
+- Manager
+- Employee
+
+Admin Dashboard:
+- analytics
+- workforce overview
+- payroll monitoring
+- attendance analytics
+- department insights
+
+HR Dashboard:
+- employee management
+- attendance management
+- leave approvals
+
+Manager Dashboard:
+- team management
+- team attendance
+- task assignment
+
+Employee Dashboard:
+- self attendance
+- leave balance
+- assigned tasks
+- payslips
+
+
+PHASE — EMPLOYEE MANAGEMENT
+Build fully functional employee management system.
+Requirements:
+- employee list
+- search
+- filters
+- pagination
+- add employee
+- edit employee
+- delete employee
+- role assignment
+- department assignment
+
+Fix employee edit workflow completely:
+- prefilled forms
+- update APIs
+- MongoDB updates
+- optimistic UI updates
+- toast notifications
+
+
+PHASE — ATTENDANCE SYSTEM
+Implement:
+- attendance marking
+- attendance history
+- attendance analytics
+- attendance correction requests
+- role-based visibility
+
+
+PHASE — LEAVE MANAGEMENT
+Implement:
+- leave requests
+- leave approvals
+- leave analytics
+- leave balance
+- multi-level approval workflow
+
+
+PHASE — COMPLAINTS + REIMBURSEMENTS
+Implement:
+- complaint system
+- reimbursement workflow
+- approval chains
+- status tracking
+
+
+PHASE  — PAYROLL + PAYSLIPS
+Implement:
+- payroll processing
+- salary structure
+- payslip generation
+- salary history
+
+PHASE — TASKS + PERFORMANCE
+Implement:
+- task assignment
+- performance reviews
+- employee KPIs
+- escalation workflow
+
+PHASE — NOTIFICATIONS + GLOBAL SEARCH
+GLOBAL SEARCH:
+- employee search
+- department search
+- task search
+- leave search
+- complaint search
+
+Requirements:
+- realtime suggestions
+- debounced search
+- role-based visibility
+- navbar integration
+
+NOTIFICATIONS:
+- realtime badge count
+- unread/read states
+- dropdown panel
+- mark as read
+- redirect on click
+
+
+UI/UX REQUIREMENTS
+ Build modern enterprise SaaS UI.
+
+Requirements:
+- responsive layout
+- professional sidebar
+- sticky navbar
+- reusable tables
+- reusable cards
+- dark/light mode
+- skeleton loaders
+- toast notifications
+- smooth animations
+- clean spacing system
+
+
+PERFORMANCE REQUIREMENTS
+Optimize:
+- Redux re-renders
+- API calls
+- dashboard rendering
+- route loading
+- search performance
+
+Implement:
+- lazy loading
+- memoization where needed
+- debounced search
+- optimized selectors
+
+
+RESPONSE FORMAT (VERY IMPORTANT)
+For EVERY implementation step:
+1. Explain current issue
+2. Explain root cause
+3. Explain architectural decision
+4. Mention exact file paths
+5. Provide production-ready code only
+6. Mention commands to run
+7. Mention expected output
+8. Mention testing steps
+9. Mention edge cases
+10. Mention common errors/fixes
+
+Keep responses:
+- incremental
+- maintainable
+- production-safe
+- scalable
+
+Do NOT overwhelm with huge rewrites at once.
+START NOW
+
+FIRST TASKS:
+1. Audit existing frontend structure
+2. Analyze routing architecture
+3. Build scalable app layout
+4. Build protected route system
+5. Build role-based sidebar
+6. Build login page UI
+7. Stabilize Redux/API flow
+8. Complete Phase 1 fully before moving ahead

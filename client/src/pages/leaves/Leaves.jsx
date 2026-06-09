@@ -3,14 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
-import {
-  Calendar,
-  Plus,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Info,
-} from "lucide-react";
+import { Calendar, Plus, CheckCircle, XCircle, Info } from "lucide-react";
 import {
   fetchMyLeaves,
   applyLeave,
@@ -36,10 +29,8 @@ const statusColor = {
 
 const Leaves = () => {
   const dispatch = useDispatch();
-  const { user, canApproveLeaves } = useAuth();
-  const { myLeaves, pending, balance, loading } = useSelector(
-    (state) => state.leaves,
-  );
+  const { canApproveLeaves } = useAuth();
+  const { myLeaves, pending, balance, loading } = useSelector((s) => s.leaves);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState("my-leaves");
   const [rejectModal, setRejectModal] = useState({
@@ -47,7 +38,6 @@ const Leaves = () => {
     leaveId: null,
   });
   const [rejectReason, setRejectReason] = useState("");
-
   const {
     register,
     handleSubmit,
@@ -64,24 +54,24 @@ const Leaves = () => {
   const onSubmit = async (data) => {
     const res = await dispatch(applyLeave(data));
     if (!res.error) {
-      toast.success("Leave application submitted successfully!");
+      toast.success("Leave application submitted!");
       setShowModal(false);
       reset();
       dispatch(fetchLeaveBalance());
     } else {
-      toast.error(res.payload || "Failed to submit leave");
+      toast.error(res.payload || "Failed to submit");
     }
   };
 
   const handleApprove = async (id) => {
     const res = await dispatch(updateLeaveStatus({ id, action: "approve" }));
     if (!res.error) toast.success("Leave approved");
-    else toast.error(res.payload || "Failed to approve");
+    else toast.error(res.payload || "Failed");
   };
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      toast.error("Please provide a rejection reason");
+      toast.error("Please provide a reason");
       return;
     }
     const res = await dispatch(
@@ -95,169 +85,200 @@ const Leaves = () => {
       toast.success("Leave rejected");
       setRejectModal({ open: false, leaveId: null });
       setRejectReason("");
-    } else {
-      toast.error(res.payload || "Failed to reject");
-    }
+    } else toast.error(res.payload || "Failed");
   };
 
   const tabs = [
     { id: "my-leaves", label: "My Leaves" },
-    { id: "balance", label: "Leave Balance" },
+    { id: "balance", label: "Balance" },
     ...(canApproveLeaves
       ? [
           {
             id: "approvals",
-            label: `Pending Approvals${pending.length ? ` (${pending.length})` : ""}`,
+            label: `Approvals${pending.length ? ` (${pending.length})` : ""}`,
           },
         ]
       : []),
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             Leave Management
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Manage leave applications and approvals
           </p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
-          <Plus className="w-4 h-4" /> Apply Leave
+        <Button onClick={() => setShowModal(true)} size="sm">
+          <Plus className="w-4 h-4" />{" "}
+          <span className="hidden sm:inline">Apply Leave</span>
+          <span className="sm:hidden">Apply</span>
         </Button>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs + Content */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        {/* Tab Bar */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? "border-b-2 border-primary-600 text-primary-600"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
+              className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === tab.id ? "border-b-2 border-primary-600 text-primary-600" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* My Leaves Tab */}
+        {/* My Leaves */}
         {activeTab === "my-leaves" && (
-          <div className="overflow-x-auto">
+          <>
             {loading ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-10">
                 <Spinner />
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-700/50">
-                    {[
-                      "Type",
-                      "From",
-                      "To",
-                      "Days",
-                      "Reason",
-                      "Status",
-                      "Applied On",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+              <>
+                {/* Mobile cards */}
+                <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                  {myLeaves.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        No leave applications yet
+                      </p>
+                      <button
+                        onClick={() => setShowModal(true)}
+                        className="mt-3 text-sm text-primary-600 font-medium"
                       >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {myLeaves.map((leave, i) => (
-                    <motion.tr
-                      key={leave._id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white capitalize">
-                        {leave.leaveType?.replace(/-/g, " ")}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(leave.from)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(leave.to)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {leave.numberOfDays}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-                        <p className="truncate">{leave.reason}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge color={statusColor[leave.status]}>
-                          {leave.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(leave.createdAt)}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+                        Apply Leave →
+                      </button>
+                    </div>
+                  ) : (
+                    myLeaves.map((leave) => (
+                      <div key={leave._id} className="p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                            {leave.leaveType?.replace(/-/g, " ")}
+                          </span>
+                          <Badge color={statusColor[leave.status]}>
+                            {leave.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(leave.from)} → {formatDate(leave.to)} ·{" "}
+                          {leave.numberOfDays} day
+                          {leave.numberOfDays > 1 ? "s" : ""}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                          {leave.reason}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-700/50">
+                        {[
+                          "Type",
+                          "From",
+                          "To",
+                          "Days",
+                          "Reason",
+                          "Status",
+                          "Applied",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="text-left px-4 lg:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {myLeaves.map((leave, i) => (
+                        <motion.tr
+                          key={leave._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                        >
+                          <td className="px-4 lg:px-6 py-3 text-sm font-medium text-gray-900 dark:text-white capitalize">
+                            {leave.leaveType?.replace(/-/g, " ")}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {formatDate(leave.from)}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {formatDate(leave.to)}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {leave.numberOfDays}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-[180px]">
+                            <p className="truncate">{leave.reason}</p>
+                          </td>
+                          <td className="px-4 lg:px-6 py-3">
+                            <Badge color={statusColor[leave.status]}>
+                              {leave.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-500">
+                            {formatDate(leave.createdAt)}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {myLeaves.length === 0 && (
+                    <div className="text-center py-12">
+                      <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No leave applications yet</p>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
-            {!loading && myLeaves.length === 0 && (
-              <div className="text-center py-12">
-                <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  No leave applications yet
-                </p>
-                <Button
-                  variant="secondary"
-                  className="mt-3"
-                  onClick={() => setShowModal(true)}
-                >
-                  Apply Your First Leave
-                </Button>
-              </div>
-            )}
-          </div>
+          </>
         )}
 
-        {/* Balance Tab */}
+        {/* Balance */}
         {activeTab === "balance" && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {!balance ? (
               <div className="flex justify-center py-8">
                 <Spinner />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {Object.entries(balance).map(([type, data]) => (
                   <div
                     key={type}
-                    className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5"
+                    className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium text-gray-900 dark:text-white capitalize">
+                      <p className="font-semibold text-gray-900 dark:text-white capitalize text-sm">
                         {type.replace(/-/g, " ")} Leave
                       </p>
                       <Info className="w-4 h-4 text-gray-400" />
                     </div>
-                    <div className="flex items-end justify-between">
+                    <div className="flex items-end justify-between mb-2">
                       <div>
-                        <p className="text-3xl font-bold text-primary-600">
+                        <p className="text-2xl sm:text-3xl font-bold text-primary-600">
                           {data.remaining}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-0.5">
                           Days remaining
                         </p>
                       </div>
@@ -266,13 +287,13 @@ const Leaves = () => {
                           {data.used} used
                         </p>
                         <p className="text-xs text-gray-400">
-                          of {data.entitled} entitled
+                          of {data.entitled}
                         </p>
                       </div>
                     </div>
-                    <div className="mt-3 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div className="bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                       <div
-                        className="bg-primary-500 h-2 rounded-full transition-all"
+                        className="bg-primary-500 h-1.5 rounded-full"
                         style={{
                           width: `${Math.min(100, (data.used / data.entitled) * 100)}%`,
                         }}
@@ -285,91 +306,141 @@ const Leaves = () => {
           </div>
         )}
 
-        {/* Approvals Tab */}
+        {/* Approvals */}
         {activeTab === "approvals" && canApproveLeaves && (
-          <div className="overflow-x-auto">
+          <>
             {pending.length === 0 ? (
               <div className="text-center py-12">
-                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-300" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  No pending leave approvals
-                </p>
+                <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-3" />
+                <p className="text-gray-500">No pending approvals</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-700/50">
-                    {[
-                      "Employee",
-                      "Type",
-                      "From",
-                      "To",
-                      "Days",
-                      "Reason",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <>
+                {/* Mobile */}
+                <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
                   {pending.map((leave) => (
-                    <tr
-                      key={leave._id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    >
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {leave.employee?.firstName} {leave.employee?.lastName}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {leave.employee?.employeeId}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
-                        {leave.leaveType?.replace(/-/g, " ")}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(leave.from)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(leave.to)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {leave.numberOfDays}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-                        <p className="truncate">{leave.reason}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleApprove(leave._id)}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
-                          >
-                            <CheckCircle className="w-3 h-3" /> Approve
-                          </button>
-                          <button
-                            onClick={() =>
-                              setRejectModal({ open: true, leaveId: leave._id })
-                            }
-                            className="flex items-center gap-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-                          >
-                            <XCircle className="w-3 h-3" /> Reject
-                          </button>
+                    <div key={leave._id} className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {leave.employee?.firstName}{" "}
+                            {leave.employee?.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {leave.employee?.employeeId} ·{" "}
+                            {leave.leaveType?.replace(/-/g, " ")} ·{" "}
+                            {leave.numberOfDays} day
+                            {leave.numberOfDays > 1 ? "s" : ""}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(leave.from)} → {formatDate(leave.to)}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded p-2">
+                        {leave.reason}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApprove(leave._id)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" /> Approve
+                        </button>
+                        <button
+                          onClick={() =>
+                            setRejectModal({ open: true, leaveId: leave._id })
+                          }
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Reject
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+                {/* Desktop */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-700/50">
+                        {[
+                          "Employee",
+                          "Type",
+                          "From",
+                          "To",
+                          "Days",
+                          "Reason",
+                          "Actions",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="text-left px-4 lg:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {pending.map((leave) => (
+                        <tr
+                          key={leave._id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                        >
+                          <td className="px-4 lg:px-6 py-3">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {leave.employee?.firstName}{" "}
+                              {leave.employee?.lastName}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {leave.employee?.employeeId}
+                            </p>
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400 capitalize">
+                            {leave.leaveType?.replace(/-/g, " ")}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {formatDate(leave.from)}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {formatDate(leave.to)}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {leave.numberOfDays}
+                          </td>
+                          <td className="px-4 lg:px-6 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-[160px]">
+                            <p className="truncate">{leave.reason}</p>
+                          </td>
+                          <td className="px-4 lg:px-6 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleApprove(leave._id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                <CheckCircle className="w-3 h-3" /> Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setRejectModal({
+                                    open: true,
+                                    leaveId: leave._id,
+                                  })
+                                }
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                <XCircle className="w-3 h-3" /> Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
-          </div>
+          </>
         )}
       </div>
 
@@ -389,12 +460,10 @@ const Leaves = () => {
               Leave Type <span className="text-red-500">*</span>
             </label>
             <select
-              {...register("leaveType", {
-                required: "Please select leave type",
-              })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
+              {...register("leaveType", { required: "Required" })}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="">Select leave type</option>
+              <option value="">Select type</option>
               {LEAVE_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
@@ -407,38 +476,33 @@ const Leaves = () => {
               </p>
             )}
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <Input
               label="From Date"
               type="date"
               required
               error={errors.from?.message}
-              {...register("from", { required: "Start date is required" })}
+              {...register("from", { required: "Required" })}
             />
             <Input
               label="To Date"
               type="date"
               required
               error={errors.to?.message}
-              {...register("to", { required: "End date is required" })}
+              {...register("to", { required: "Required" })}
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Reason <span className="text-red-500">*</span>
             </label>
             <textarea
               {...register("reason", {
-                required: "Reason is required",
-                minLength: {
-                  value: 10,
-                  message: "Please provide a detailed reason (min 10 chars)",
-                },
+                required: "Required",
+                minLength: { value: 10, message: "Min 10 characters" },
               })}
               rows={3}
-              placeholder="Please describe the reason for your leave..."
+              placeholder="Describe the reason for your leave..."
               className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
             />
             {errors.reason && (
@@ -447,8 +511,7 @@ const Leaves = () => {
               </p>
             )}
           </div>
-
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-1">
             <Button type="submit" loading={isSubmitting} className="flex-1">
               Submit Application
             </Button>
@@ -466,7 +529,7 @@ const Leaves = () => {
         </form>
       </Modal>
 
-      {/* Reject Reason Modal */}
+      {/* Reject Modal */}
       <Modal
         isOpen={rejectModal.open}
         onClose={() => setRejectModal({ open: false, leaveId: null })}
@@ -482,7 +545,7 @@ const Leaves = () => {
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               rows={3}
-              placeholder="Provide a reason for rejection..."
+              placeholder="Provide a reason..."
               className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
             />
           </div>
