@@ -20,6 +20,7 @@ import Complaints from "../pages/complaints/Complaints";
 import Reports from "../pages/reports/Reports";
 import Profile from "../pages/profile/Profile";
 import WorkSchedule from "../pages/settings/WorkSchedule";
+import CompanyProfile from "../pages/company/CompanyProfile";
 
 const router = createBrowserRouter([
   {
@@ -30,13 +31,13 @@ const router = createBrowserRouter([
     path: "/",
     element: <ProtectedRoute />,
     children: [
+      { index: true, element: <Navigate to="/dashboard" replace /> },
       {
         element: <Layout />,
         children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "dashboard", element: <Dashboard /> },
           { path: "profile", element: <Profile /> },
-
+          { path: "company", element: <CompanyProfile /> },
           // ── Employees ──────────────────────────────────────────
           {
             path: "employees",
@@ -46,28 +47,23 @@ const router = createBrowserRouter([
             children: [
               { index: true, element: <EmployeeList /> },
               {
-                // NEW: add employee — admin + hr only
                 path: "new",
                 element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,
                 children: [{ index: true, element: <EmployeeForm /> }],
               },
               {
-                // FIX: edit employee — admin + hr + manager
-                // Manager can VIEW, only admin/hr can save changes (handled in form)
                 path: ":id/edit",
                 element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,
                 children: [{ index: true, element: <EmployeeForm /> }],
               },
             ],
           },
-
           // ── Work Schedules ─────────────────────────────────────
           {
             path: "settings/schedules",
             element: <ProtectedRoute allowedRoles={["admin", "hr"]} />,
             children: [{ index: true, element: <WorkSchedule /> }],
           },
-
           // ── All Roles ──────────────────────────────────────────
           { path: "attendance", element: <Attendance /> },
           { path: "leaves", element: <Leaves /> },
@@ -75,7 +71,6 @@ const router = createBrowserRouter([
           { path: "performance", element: <Performance /> },
           { path: "reimbursements", element: <Reimbursements /> },
           { path: "complaints", element: <Complaints /> },
-
           // ── Admin + HR Only ────────────────────────────────────
           {
             path: "payroll",

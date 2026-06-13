@@ -19,6 +19,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import performanceRoutes from './routes/performance.routes.js';
 import jobRoutes from './routes/job.routes.js';
 import workScheduleRoutes from './routes/workSchedule.routes.js';
+import companyRoutes from "./routes/company.routes.js"; 
 
 const app = express();
 
@@ -94,6 +95,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/performance', performanceRoutes);
 app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/v1/schedules', workScheduleRoutes);
+app.use("/api/v1/company", companyRoutes);
 
 // ── 404 Handler ────────────────────────────────────────────
 app.use((req, res) => {

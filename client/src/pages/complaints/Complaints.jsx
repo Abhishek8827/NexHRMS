@@ -35,13 +35,6 @@ const statusColor = {
   closed: "gray",
 };
 
-const priorityColor = {
-  low: "gray",
-  medium: "yellow",
-  high: "orange",
-  critical: "red",
-};
-
 const Complaints = () => {
   const dispatch = useDispatch();
   const { isAdminOrHR, isManager } = useAuth();
@@ -62,18 +55,12 @@ const Complaints = () => {
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: { priority: "medium" } });
 
-  // ── Fetch on mount ──────────────────────────────────────
   useEffect(() => {
     dispatch(fetchComplaints());
   }, [dispatch]);
 
-  // ── Submit new complaint ────────────────────────────────
   const onSubmit = async (data) => {
-    const payload = {
-      ...data,
-      isAnonymous: Boolean(data.isAnonymous),
-    };
-
+    const payload = { ...data, isAnonymous: Boolean(data.isAnonymous) };
     const res = await dispatch(createComplaint(payload));
     if (!res.error) {
       toast.success("Complaint submitted successfully");
@@ -84,7 +71,6 @@ const Complaints = () => {
     }
   };
 
-  // ── Update status (HR/Admin) ────────────────────────────
   const handleStatusUpdate = async (status) => {
     setUpdatingStatus(true);
     const res = await dispatch(
@@ -95,7 +81,6 @@ const Complaints = () => {
       }),
     );
     setUpdatingStatus(false);
-
     if (!res.error) {
       toast.success(`Complaint marked as: ${status.replace(/-/g, " ")}`);
       setResolveModal({ open: false, complaint: null });
@@ -105,7 +90,6 @@ const Complaints = () => {
     }
   };
 
-  // ── Stats ───────────────────────────────────────────────
   const stats = {
     open: list.filter((c) => c.status === "open").length,
     inReview: list.filter((c) => c.status === "under-review").length,
@@ -115,24 +99,26 @@ const Complaints = () => {
   const canManage = isAdminOrHR || isManager;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             Complaints
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Raise and track workplace concerns
           </p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
-          <Plus className="w-4 h-4" /> Raise Complaint
+        <Button onClick={() => setShowModal(true)} size="sm">
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Raise Complaint</span>
+          <span className="sm:hidden">Raise</span>
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {[
           {
             label: "Open",
@@ -153,9 +139,9 @@ const Complaints = () => {
               "text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400",
           },
         ].map((s) => (
-          <div key={s.label} className={`${s.color} rounded-xl p-4`}>
-            <p className="text-2xl font-bold">{s.value}</p>
-            <p className="text-sm font-medium mt-0.5">{s.label}</p>
+          <div key={s.label} className={`${s.color} rounded-xl p-3 sm:p-4`}>
+            <p className="text-xl sm:text-2xl font-bold">{s.value}</p>
+            <p className="text-xs sm:text-sm font-medium mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -167,7 +153,7 @@ const Complaints = () => {
             <Spinner />
           </div>
         ) : list.length === 0 ? (
-          <div className="p-12 text-center">
+          <div className="p-10 sm:p-12 text-center">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
             <p className="text-gray-500 dark:text-gray-400">
               No complaints raised yet
@@ -188,9 +174,9 @@ const Complaints = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     {/* Meta */}
                     <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -213,55 +199,56 @@ const Complaints = () => {
                       >
                         {c.priority}
                       </span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {formatDate(c.createdAt)}
-                      </span>
                     </div>
 
                     {/* Subject */}
-                    <p className="font-semibold text-gray-900 dark:text-white">
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
                       {c.subject}
                     </p>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                       {c.description}
                     </p>
 
-                    {/* Resolution */}
+                    {/* Footer */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-3 text-xs text-gray-400">
+                      {!c.isAnonymous && c.raisedBy && (
+                        <span>
+                          By: {c.raisedBy?.firstName} {c.raisedBy?.lastName}
+                        </span>
+                      )}
+                      {c.isAnonymous && (
+                        <span className="italic">Anonymous</span>
+                      )}
+                      <span>{formatDate(c.createdAt)}</span>
+                    </div>
+
+                    {/* Resolution (if resolved) */}
                     {c.resolution && (
-                      <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
-                        <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-0.5">
+                      <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <p className="text-xs font-semibold text-green-700 dark:text-green-400 mb-1">
                           Resolution
                         </p>
-                        <p className="text-sm text-green-800 dark:text-green-300">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                           {c.resolution}
                         </p>
                       </div>
                     )}
-
-                    {/* Raised by (for HR/Admin) */}
-                    {canManage && c.raisedBy && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                        Raised by: {c.raisedBy.firstName} {c.raisedBy.lastName}
-                        {c.raisedBy.employeeId && ` (${c.raisedBy.employeeId})`}
-                      </p>
-                    )}
                   </div>
 
-                  {/* Action button for HR/Admin */}
-                  {isAdminOrHR &&
-                    !["resolved", "closed"].includes(c.status) && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          setResolveModal({ open: true, complaint: c });
-                          setResolution(c.resolution || "");
-                        }}
+                  {/* Actions */}
+                  {canManage &&
+                    c.status !== "resolved" &&
+                    c.status !== "closed" && (
+                      <button
+                        onClick={() =>
+                          setResolveModal({ open: true, complaint: c })
+                        }
+                        className="flex-shrink-0 text-xs sm:text-sm font-medium text-primary-600 hover:text-primary-700 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors whitespace-nowrap"
                       >
                         Update Status
-                      </Button>
+                      </button>
                     )}
                 </div>
               </motion.div>
@@ -355,7 +342,7 @@ const Complaints = () => {
             />
             <label
               htmlFor="isAnonymous"
-              className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+              className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
             >
               Submit anonymously — your identity will be hidden from HR/Manager
             </label>
@@ -392,14 +379,14 @@ const Complaints = () => {
         {resolveModal.complaint && (
           <div className="space-y-4">
             {/* Complaint summary */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-1">
-              <div className="flex items-center gap-2">
+            <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge
                   color={statusColor[resolveModal.complaint.status] || "gray"}
                 >
                   {resolveModal.complaint.status}
                 </Badge>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 capitalize">
                   {resolveModal.complaint.category?.replace(/-/g, " ")}
                 </span>
               </div>
@@ -430,28 +417,28 @@ const Complaints = () => {
               <button
                 onClick={() => handleStatusUpdate("under-review")}
                 disabled={updatingStatus}
-                className="px-3 py-2.5 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+                className="px-3 py-2.5 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-60"
               >
                 Under Review
               </button>
               <button
                 onClick={() => handleStatusUpdate("action-taken")}
                 disabled={updatingStatus}
-                className="px-3 py-2.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+                className="px-3 py-2.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-60"
               >
                 Action Taken
               </button>
               <button
                 onClick={() => handleStatusUpdate("resolved")}
                 disabled={updatingStatus}
-                className="px-3 py-2.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+                className="px-3 py-2.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-60"
               >
                 ✓ Mark Resolved
               </button>
               <button
                 onClick={() => handleStatusUpdate("closed")}
                 disabled={updatingStatus}
-                className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+                className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-60"
               >
                 Close
               </button>

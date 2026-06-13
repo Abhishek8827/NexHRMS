@@ -1,95 +1,118 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../services/api";
 
-export const fetchMyReimbursements = createAsyncThunk(
-  'reimbursements/fetchMy',
+// ── Thunks ─────────────────────────────────────────────────
+
+export const fetchReimbursements = createAsyncThunk(
+  "reimbursements/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get('/reimbursements/my');
+      const res = await api.get("/reimbursements");
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed');
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch");
     }
   }
 );
 
-export const fetchAllReimbursements = createAsyncThunk(
-  'reimbursements/fetchAll',
-  async (params, { rejectWithValue }) => {
-    try {
-      const res = await api.get('/reimbursements', { params });
-      return res.data.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed');
-    }
-  }
-);
-
-export const createReimbursement = createAsyncThunk(
-  'reimbursements/create',
+export const submitReimbursement = createAsyncThunk(
+  "reimbursements/submit",
   async (data, { rejectWithValue }) => {
     try {
-      const res = await api.post('/reimbursements', data);
+      const res = await api.post("/reimbursements", data);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed');
+      return rejectWithValue(err.response?.data?.message || "Failed to submit");
     }
   }
 );
 
-export const updateReimbursementStatus = createAsyncThunk(
-  'reimbursements/updateStatus',
-  async ({ id, status, approvedAmount, remarks }, { rejectWithValue }) => {
+export const approveReimbursement = createAsyncThunk(
+  "reimbursements/approve",
+  async (id, { rejectWithValue }) => {
     try {
-      const res = await api.patch(`/reimbursements/${id}/status`, {
-        status, approvedAmount, remarks,
-      });
+      const res = await api.patch(`/reimbursements/${id}/approve`);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed');
+      return rejectWithValue(err.response?.data?.message || "Failed to approve");
     }
   }
 );
 
+export const rejectReimbursement = createAsyncThunk(
+  "reimbursements/reject",
+  async ({ id, reason }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/reimbursements/${id}/reject`, { reason });
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to reject");
+    }
+  }
+);
+
+export const deleteReimbursement = createAsyncThunk(
+  "reimbursements/delete",
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/reimbursements/${id}`);
+      return id;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to delete");
+    }
+  }
+);
+
+// ── Slice ──────────────────────────────────────────────────
 const reimbursementSlice = createSlice({
-  name: 'reimbursements',
+  name: "reimbursements",
   initialState: {
-    myList: [],
-    allList: [],
+    list: [],
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    clearError: (state) => { state.error = null; },
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMyReimbursements.pending, (state) => { state.loading = true; })
-      .addCase(fetchMyReimbursements.fulfilled, (state, action) => {
+      // Fetch all
+      .addCase(fetchReimbursements.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchReimbursements.fulfilled, (state, { payload }) => {
         state.loading = false;
-        state.myList = action.payload;
+        state.list = Array.isArray(payload) ? payload : payload?.reimbursements || [];
       })
-      .addCase(fetchMyReimbursements.rejected, (state, action) => {
+      .addCase(fetchReimbursements.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = payload;
       })
-      .addCase(fetchAllReimbursements.pending, (state) => { state.loading = true; })
-      .addCase(fetchAllReimbursements.fulfilled, (state, action) => {
-        state.loading = false;
-        state.allList = action.payload;
+
+      // Submit — add to top of list
+      .addCase(submitReimbursement.fulfilled, (state, { payload }) => {
+        state.list.unshift(payload);
       })
-      .addCase(fetchAllReimbursements.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+
+      // Approve — update in list
+      .addCase(approveReimbursement.fulfilled, (state, { payload }) => {
+        const idx = state.list.findIndex((r) => r._id === payload._id);
+        if (idx !== -1) state.list[idx] = payload;
       })
-      .addCase(createReimbursement.fulfilled, (state, action) => {
-        state.myList.unshift(action.payload);
+
+      // Reject — update in list
+      .addCase(rejectReimbursement.fulfilled, (state, { payload }) => {
+        const idx = state.list.findIndex((r) => r._id === payload._id);
+        if (idx !== -1) state.list[idx] = payload;
       })
-      .addCase(updateReimbursementStatus.fulfilled, (state, action) => {
-        const myIdx = state.myList.findIndex(r => r._id === action.payload._id);
-        if (myIdx !== -1) state.myList[myIdx] = action.payload;
-        const allIdx = state.allList.findIndex(r => r._id === action.payload._id);
-        if (allIdx !== -1) state.allList[allIdx] = action.payload;
+
+      // Delete — remove from list
+      .addCase(deleteReimbursement.fulfilled, (state, { payload }) => {
+        state.list = state.list.filter((r) => r._id !== payload);
       });
   },
 });
 
+export const { clearError } = reimbursementSlice.actions;
 export default reimbursementSlice.reducer;

@@ -75,7 +75,11 @@ const STATUS_COLOR = {
 // ── Star Rating ───────────────────────────────────────────
 const StarRating = ({ value, onChange, readonly = false, size = "md" }) => {
   const [hover, setHover] = useState(0);
-  const sizes = { sm: "w-4 h-4", md: "w-6 h-6", lg: "w-8 h-8" };
+  const sizes = {
+    sm: "w-4 h-4",
+    md: "w-5 h-5 sm:w-6 sm:h-6",
+    lg: "w-6 h-6 sm:w-8 sm:h-8",
+  };
 
   return (
     <div className="flex items-center gap-1">
@@ -87,9 +91,7 @@ const StarRating = ({ value, onChange, readonly = false, size = "md" }) => {
           onClick={() => !readonly && onChange?.(star)}
           onMouseEnter={() => !readonly && setHover(star)}
           onMouseLeave={() => !readonly && setHover(0)}
-          className={`${
-            readonly ? "cursor-default" : "cursor-pointer hover:scale-110"
-          } transition-transform`}
+          className={`${readonly ? "cursor-default" : "cursor-pointer hover:scale-110"} transition-transform`}
         >
           <Star
             className={`${sizes[size]} transition-colors ${
@@ -101,7 +103,7 @@ const StarRating = ({ value, onChange, readonly = false, size = "md" }) => {
         </button>
       ))}
       {value > 0 && (
-        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-1">
+        <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 ml-1">
           {value}.0
         </span>
       )}
@@ -123,25 +125,25 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
     >
       {/* Card Header */}
       <div
-        className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        className="flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {canManage && (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xs sm:text-sm font-semibold flex-shrink-0">
               {getInitials(
                 review.employee?.firstName,
                 review.employee?.lastName,
               )}
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             {canManage && (
-              <p className="font-semibold text-gray-900 dark:text-white text-sm">
+              <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
                 {review.employee?.firstName} {review.employee?.lastName}
               </p>
             )}
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               Q{review.quarter} {review.year} Performance Review
             </p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -158,20 +160,19 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-2">
           {review.overallScore != null && (
             <div className="text-right hidden sm:block">
-              <p className="text-2xl font-bold text-primary-600">
+              <p className="text-xl sm:text-2xl font-bold text-primary-600">
                 {review.overallScore}
               </p>
               <p className="text-xs text-gray-500">/ 5.0</p>
             </div>
           )}
           {expanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
+            <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           )}
         </div>
       </div>
@@ -185,7 +186,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden border-t border-gray-200 dark:border-gray-700"
           >
-            <div className="p-5 space-y-6 bg-gray-50 dark:bg-gray-800/30">
+            <div className="p-4 sm:p-5 space-y-5 bg-gray-50 dark:bg-gray-800/30">
               {/* Goals */}
               {review.goals?.length > 0 && (
                 <div>
@@ -194,12 +195,11 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
                   </h4>
                   <div className="space-y-3">
                     {review.goals.map((goal, i) => (
-                      // KEY FIX: composite key using review._id + index
                       <div
                         key={`goal-${review._id}-${i}`}
-                        className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                        className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700"
                       >
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between flex-wrap gap-2">
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {goal.title}
                           </p>
@@ -227,17 +227,16 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
               {review.competencies?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                    <BarChart2 className="w-4 h-4 text-primary-600" />
+                    <BarChart2 className="w-4 h-4 text-primary-600" />{" "}
                     Competencies
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {review.competencies.map((comp, i) => (
-                      // KEY FIX: composite key
                       <div
                         key={`comp-${review._id}-${i}`}
                         className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
                       >
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             {comp.name}
                           </p>
@@ -259,7 +258,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
               {/* Ratings Summary */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {review.selfRating != null && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                     <p className="text-xs font-medium text-gray-500 mb-2">
                       Self Rating
                     </p>
@@ -272,7 +271,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
                   </div>
                 )}
                 {review.managerRating != null && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                     <p className="text-xs font-medium text-gray-500 mb-2">
                       Manager Rating
                     </p>
@@ -288,7 +287,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
 
               {/* Next Period Goals */}
               {review.nextPeriodGoals?.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                   <p className="text-xs font-medium text-gray-500 mb-2">
                     Goals for Next Period
                   </p>
@@ -298,8 +297,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
                         key={`next-goal-${review._id}-${i}`}
                         className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
                       >
-                        <span className="text-primary-600 mt-0.5">→</span>
-                        {g}
+                        <span className="text-primary-600 mt-0.5">→</span> {g}
                       </li>
                     ))}
                   </ul>
@@ -308,7 +306,6 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
-                {/* Employee self review button */}
                 {isMyReview && review.status === "draft" && (
                   <Button
                     size="sm"
@@ -317,7 +314,6 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
                     <Star className="w-4 h-4" /> Submit Self Review
                   </Button>
                 )}
-                {/* Manager review button */}
                 {canManage && review.status === "manager-review" && (
                   <Button
                     size="sm"
@@ -369,7 +365,6 @@ const SelfReviewModal = ({ review, onClose, onSubmit }) => {
 
   return (
     <div className="space-y-5">
-      {/* Goals */}
       <div>
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
           Rate Your Goals
@@ -378,7 +373,7 @@ const SelfReviewModal = ({ review, onClose, onSubmit }) => {
           {goals.map((goal, i) => (
             <div
               key={`self-goal-${i}`}
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3"
+              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3"
             >
               <p className="text-sm font-medium text-gray-800 dark:text-white">
                 {goal.title}
@@ -420,16 +415,12 @@ const SelfReviewModal = ({ review, onClose, onSubmit }) => {
           ))}
         </div>
       </div>
-
-      {/* Overall Self Rating */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Overall Self Rating <span className="text-red-500">*</span>
         </label>
         <StarRating value={selfRating} onChange={setSelfRating} size="lg" />
       </div>
-
-      {/* Comments */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Comments <span className="text-red-500">*</span>
@@ -442,7 +433,6 @@ const SelfReviewModal = ({ review, onClose, onSubmit }) => {
           className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
         />
       </div>
-
       <div className="flex gap-3">
         <Button className="flex-1" onClick={handleSubmit} loading={submitting}>
           Submit Self Review
@@ -485,7 +475,6 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
     const updated = [...competencies];
     updated[idx] = { ...updated[idx], [field]: value };
     setCompetencies(updated);
-    // Auto-calculate overall score from competency scores
     const scores = updated.map((c) => c.score || 0).filter((s) => s > 0);
     if (scores.length > 0) {
       setOverallScore(
@@ -526,7 +515,6 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
 
   return (
     <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
-      {/* Competencies */}
       <div>
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
           Competency Ratings
@@ -535,9 +523,9 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
           {competencies.map((comp, i) => (
             <div
               key={`mgr-comp-${i}`}
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                 <p className="text-sm font-medium text-gray-800 dark:text-white">
                   {comp.name}
                 </p>
@@ -557,7 +545,6 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
         </div>
       </div>
 
-      {/* Overall Rating + Score */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -574,7 +561,7 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
             Overall Score (auto-calculated)
           </label>
           <div className="flex items-center gap-2">
-            <span className="text-3xl font-bold text-primary-600">
+            <span className="text-2xl sm:text-3xl font-bold text-primary-600">
               {overallScore || "—"}
             </span>
             <span className="text-gray-500 text-sm">/ 5.0</span>
@@ -582,7 +569,6 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
         </div>
       </div>
 
-      {/* Grade */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Final Grade <span className="text-red-500">*</span>
@@ -593,7 +579,7 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
               key={`grade-${g.value}`}
               onClick={() => setGrade(g.value)}
               type="button"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all border ${
                 grade === g.value
                   ? `${g.color} border-current shadow-sm`
                   : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -605,7 +591,6 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
         </div>
       </div>
 
-      {/* Manager Comments */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Manager Comments <span className="text-red-500">*</span>
@@ -619,7 +604,6 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
         />
       </div>
 
-      {/* Next Goals */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Goals for Next Period{" "}
@@ -698,9 +682,8 @@ const Performance = () => {
     }
   };
 
-  const handleAction = (type, review) => {
+  const handleAction = (type, review) =>
     setActionModal({ open: true, type, review });
-  };
 
   const handleSelfReviewSubmit = async (data) => {
     const res = await dispatch(
@@ -710,9 +693,7 @@ const Performance = () => {
       toast.success("Self review submitted!");
       setActionModal({ open: false, type: null, review: null });
       dispatch(fetchMyReviews());
-    } else {
-      toast.error(res.payload || "Failed");
-    }
+    } else toast.error(res.payload || "Failed");
   };
 
   const handleManagerReviewSubmit = async (data) => {
@@ -723,9 +704,7 @@ const Performance = () => {
       toast.success("Review completed!");
       setActionModal({ open: false, type: null, review: null });
       dispatch(fetchAllReviews());
-    } else {
-      toast.error(res.payload || "Failed");
-    }
+    } else toast.error(res.payload || "Failed");
   };
 
   const reviewsToShow = activeTab === "my-reviews" ? myReviews : allReviews;
@@ -758,26 +737,28 @@ const Performance = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             Performance Reviews
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Track performance, goals, and employee growth
           </p>
         </div>
         {canManage && (
-          <Button onClick={() => setCreateModal(true)}>
-            <Plus className="w-4 h-4" /> Start Review
+          <Button onClick={() => setCreateModal(true)} size="sm">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Start Review</span>
+            <span className="sm:hidden">Review</span>
           </Button>
         )}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
             label: "My Avg Rating",
@@ -817,25 +798,29 @@ const Performance = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className={`${s.color} rounded-xl p-5 flex items-center gap-4`}
+            className={`${s.color} rounded-xl p-3 sm:p-4 lg:p-5 flex items-center gap-3 sm:gap-4`}
           >
-            <s.icon className="w-8 h-8 flex-shrink-0" />
+            <s.icon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 flex-shrink-0" />
             <div>
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-sm font-medium mt-0.5">{s.label}</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                {s.value}
+              </p>
+              <p className="text-[10px] sm:text-xs lg:text-sm font-medium mt-0.5">
+                {s.label}
+              </p>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs + Content */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-        <div className="flex border-b border-gray-200 dark:border-gray-800">
+        <div className="flex border-b border-gray-200 dark:border-gray-800 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.id
                   ? "border-b-2 border-primary-600 text-primary-600"
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -846,7 +831,7 @@ const Performance = () => {
           ))}
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {loading ? (
             <div className="flex justify-center py-12">
               <Spinner />
@@ -868,7 +853,7 @@ const Performance = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {reviewsToShow.map((review) => (
                 <ReviewCard
                   key={review._id}
@@ -911,7 +896,6 @@ const Performance = () => {
               ))}
             </select>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -941,10 +925,7 @@ const Performance = () => {
               <select
                 value={createForm.year}
                 onChange={(e) =>
-                  setCreateForm((f) => ({
-                    ...f,
-                    year: Number(e.target.value),
-                  }))
+                  setCreateForm((f) => ({ ...f, year: Number(e.target.value) }))
                 }
                 className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
@@ -956,7 +937,6 @@ const Performance = () => {
               </select>
             </div>
           </div>
-
           <div className="flex gap-3">
             <Button className="flex-1" onClick={handleCreateReview}>
               Initiate Review

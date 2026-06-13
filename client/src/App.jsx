@@ -5,6 +5,7 @@ import AppRoutes from "./routes/index";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getCurrentUser } from "./features/auth/authSlice";
+// import { fetchCompany } from "./features/company/companySlice";
 import Spinner from "./components/common/Spinner";
 
 const AuthLoader = ({ children }) => {
@@ -14,7 +15,9 @@ const AuthLoader = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("nexhr_token");
     if (token) {
+      // Load auth + company profile in parallel
       dispatch(getCurrentUser());
+      // dispatch(fetchCompany());
     } else {
       // No token — stop loading immediately
       dispatch({ type: "auth/getMe/rejected" });

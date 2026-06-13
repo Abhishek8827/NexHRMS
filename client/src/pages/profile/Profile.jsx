@@ -1,420 +1,531 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { useForm } from "react-hook-form";
 import {
   User,
-  Shield,
+  Lock,
+  Bell,
   Camera,
-  Building2,
+  Mail,
   Phone,
   MapPin,
-  AlertCircle,
+  Calendar,
+  Briefcase,
+  Building2,
+  Save,
+  Eye,
+  EyeOff,
+  Shield,
 } from "lucide-react";
+// import { updateProfile, changePassword } from "../../features/auth/authSlice";
 import { getCurrentUser } from "../../features/auth/authSlice";
-import Input from "../../components/common/Input";
+import useAuth from "../../hooks/useAuth";
 import Button from "../../components/common/Button";
-import api from "../../services/api";
-import { getInitials, formatDate } from "../../utils/helpers";
+import Input from "../../components/common/Input";
+import Badge from "../../components/common/Badge";
+import { formatDate, getInitials } from "../../utils/helpers";
 
-const profileSchema = z.object({
-  firstName: z.string().min(2, "Required"),
-  lastName: z.string().min(2, "Required"),
-  phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  gender: z.string().optional(),
-  "address.street": z.string().optional(),
-  "address.city": z.string().optional(),
-  "address.state": z.string().optional(),
-  "address.pincode": z.string().optional(),
-  "emergencyContact.name": z.string().optional(),
-  "emergencyContact.relationship": z.string().optional(),
-  "emergencyContact.phone": z.string().optional(),
-});
-
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Required"),
-    newPassword: z.string().min(8, "Min 8 characters"),
-    confirmPassword: z.string().min(1, "Required"),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-const TABS = [
-  { id: "personal", label: "Personal Info", icon: User },
-  { id: "security", label: "Security", icon: Shield },
-];
+const roleColors = {
+  admin: "from-violet-500 to-indigo-600",
+  hr: "from-blue-500 to-cyan-600",
+  manager: "from-emerald-500 to-teal-600",
+  employee: "from-orange-500 to-amber-600",
+};
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((s) => s.auth);
+  const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(
-    searchParams.get("tab") || "personal",
+    searchParams.get("tab") || "profile",
   );
-  const [saving, setSaving] = useState(false);
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(profileSchema),
+  const gradient = roleColors[user?.role] || roleColors.employee;
+
+  const profileForm = useForm({
+    defaultValues: {
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      phone: user?.phone || "",
+      dateOfBirth: user?.dateOfBirth?.split("T")[0] || "",
+      gender: user?.gender || "",
+      "address.street": user?.address?.street || "",
+      "address.city": user?.address?.city || "",
+      "address.state": user?.address?.state || "",
+      "address.country": user?.address?.country || "",
+      "emergencyContact.name": user?.emergencyContact?.name || "",
+      "emergencyContact.phone": user?.emergencyContact?.phone || "",
+      "emergencyContact.relationship":
+        user?.emergencyContact?.relationship || "",
+    },
   });
 
-  const {
-    register: regPwd,
-    handleSubmit: handlePwdSubmit,
-    reset: resetPwd,
-    formState: { errors: pwdErrors, isSubmitting: pwdSubmitting },
-  } = useForm({ resolver: zodResolver(passwordSchema) });
+  const pwdForm = useForm();
 
   useEffect(() => {
     if (user) {
-      reset({
+      profileForm.reset({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         phone: user.phone || "",
-        dateOfBirth: user.dateOfBirth
-          ? new Date(user.dateOfBirth).toISOString().split("T")[0]
-          : "",
+        dateOfBirth: user.dateOfBirth?.split("T")[0] || "",
         gender: user.gender || "",
         "address.street": user.address?.street || "",
         "address.city": user.address?.city || "",
         "address.state": user.address?.state || "",
-        "address.pincode": user.address?.pincode || "",
+        "address.country": user.address?.country || "",
         "emergencyContact.name": user.emergencyContact?.name || "",
+        "emergencyContact.phone": user.emergencyContact?.phone || "",
         "emergencyContact.relationship":
           user.emergencyContact?.relationship || "",
-        "emergencyContact.phone": user.emergencyContact?.phone || "",
       });
     }
-  }, [user, reset]);
+  }, [user]);
 
   const onSaveProfile = async (data) => {
-    setSaving(true);
-    try {
-      // Unflatten address/emergencyContact
-      const payload = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phone: data.phone,
-        dateOfBirth: data.dateOfBirth || undefined,
-        gender: data.gender || undefined,
-        address: {
-          street: data["address.street"],
-          city: data["address.city"],
-          state: data["address.state"],
-          pincode: data["address.pincode"],
-        },
-        emergencyContact: {
-          name: data["emergencyContact.name"],
-          relationship: data["emergencyContact.relationship"],
-          phone: data["emergencyContact.phone"],
-        },
-      };
-      await api.put(`/employees/${user._id}`, payload);
-      dispatch(getCurrentUser()); // Refresh auth state
-      toast.success("Profile updated successfully!");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed");
-    } finally {
-      setSaving(false);
-    }
+    const payload = {
+      ...data,
+      address: {
+        street: data["address.street"],
+        city: data["address.city"],
+        state: data["address.state"],
+        country: data["address.country"],
+      },
+      emergencyContact: {
+        name: data["emergencyContact.name"],
+        phone: data["emergencyContact.phone"],
+        relationship: data["emergencyContact.relationship"],
+      },
+    };
+    [
+      "address.street",
+      "address.city",
+      "address.state",
+      "address.country",
+      "emergencyContact.name",
+      "emergencyContact.phone",
+      "emergencyContact.relationship",
+    ].forEach((k) => delete payload[k]);
+
+    const res = await dispatch(updateProfile(payload));
+    if (!res.error) toast.success("Profile updated!");
+    else toast.error(res.payload || "Failed to update");
   };
 
   const onChangePassword = async (data) => {
-    try {
-      await api.post("/auth/change-password", {
+    if (data.newPassword !== data.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    const res = await dispatch(
+      changePassword({
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
-      });
+      }),
+    );
+    if (!res.error) {
       toast.success("Password changed successfully!");
-      resetPwd();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to change password");
-    }
+      pwdForm.reset();
+    } else toast.error(res.payload || "Failed to change password");
   };
 
-  if (!user) return null;
+  const tabs = [
+    { id: "profile", label: "Profile", icon: User },
+    { id: "security", label: "Security", icon: Shield },
+  ];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Profile Header Card */}
+    <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+      {/* ── Profile Hero ──────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden"
+        className={`relative bg-gradient-to-r ${gradient} rounded-2xl p-5 sm:p-8 overflow-hidden`}
       >
-        <div className="h-24 bg-gradient-to-r from-primary-600 to-primary-800" />
-        <div className="px-6 pb-6">
-          <div className="flex items-end justify-between -mt-10 mb-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-2xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-800 shadow-md flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary-600">
-                  {getInitials(user.firstName, user.lastName)}
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+        <div className="relative flex items-center gap-4 sm:gap-6 flex-wrap">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="avatar"
+                  className="w-full h-full rounded-2xl object-cover"
+                />
+              ) : (
+                getInitials(user?.firstName, user?.lastName)
+              )}
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-white">
+              {user?.firstName} {user?.lastName}
+            </h1>
+            <p className="text-white/80 text-sm sm:text-base mt-0.5">
+              {user?.designation || user?.role}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+              <span className="text-xs bg-white/20 text-white px-2.5 py-1 rounded-full capitalize font-medium">
+                {user?.role}
+              </span>
+              {user?.employeeId && (
+                <span className="text-xs bg-white/20 text-white px-2.5 py-1 rounded-full font-mono">
+                  {user.employeeId}
                 </span>
+              )}
+              <Badge color={user?.status === "active" ? "green" : "red"}>
+                {user?.status}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="relative mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-white/20 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {[
+            { label: "Email", value: user?.email, icon: Mail },
+            {
+              label: "Department",
+              value: user?.department?.name || "—",
+              icon: Building2,
+            },
+            {
+              label: "Joined",
+              value: formatDate(user?.joiningDate),
+              icon: Calendar,
+            },
+            { label: "Phone", value: user?.phone || "Not added", icon: Phone },
+          ].map((item) => (
+            <div key={item.label} className="flex items-start gap-2 min-w-0">
+              <item.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/60 mt-0.5 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-white/60 text-[10px] sm:text-xs">
+                  {item.label}
+                </p>
+                <p className="text-white text-xs sm:text-sm font-medium truncate">
+                  {item.value}
+                </p>
               </div>
             </div>
-            <div className="mb-2">
-              <span className="px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg text-sm font-medium capitalize">
-                {user.role}
-              </span>
-            </div>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {user.firstName} {user.lastName}
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {user.designation || "No designation set"} ·{" "}
-            {user.employeeId || "—"}
-          </p>
-          <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
-            <span className="flex items-center gap-1.5">
-              <Building2 className="w-4 h-4" />
-              {user.department?.name || "No department"}
-            </span>
-            {user.phone && (
-              <span className="flex items-center gap-1.5">
-                <Phone className="w-4 h-4" /> {user.phone}
-              </span>
-            )}
-            {user.address?.city && (
-              <span className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4" /> {user.address.city}
-              </span>
-            )}
-          </div>
+          ))}
         </div>
       </motion.div>
 
-      {/* Tabs */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-        <div className="flex border-b border-gray-200 dark:border-gray-800">
-          {TABS.map((tab) => (
+      {/* ── Tabs ─────────────────────────────────────────── */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id);
                 setSearchParams({ tab: tab.id });
               }}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "border-b-2 border-primary-600 text-primary-600"
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
               }`}
             >
-              <tab.icon className="w-4 h-4" /> {tab.label}
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="p-6">
-          {/* Personal Info Tab */}
-          {activeTab === "personal" && (
-            <form onSubmit={handleSubmit(onSaveProfile)} className="space-y-6">
+        <div className="p-4 sm:p-6">
+          {/* ── Profile Tab ─────────────────────────────── */}
+          {activeTab === "profile" && (
+            <form
+              onSubmit={profileForm.handleSubmit(onSaveProfile)}
+              className="space-y-6"
+            >
+              {/* Personal info */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                  Basic Information
+                  Personal Information
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <Input
-                    label="First Name"
-                    required
-                    error={errors.firstName?.message}
-                    {...register("firstName")}
+                    label="First Name *"
+                    {...profileForm.register("firstName", { required: true })}
                   />
                   <Input
-                    label="Last Name"
-                    required
-                    error={errors.lastName?.message}
-                    {...register("lastName")}
+                    label="Last Name *"
+                    {...profileForm.register("lastName", { required: true })}
                   />
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Email
-                    </label>
-                    <input
-                      value={user.email}
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 text-sm cursor-not-allowed"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Contact HR to change email
-                    </p>
-                  </div>
                   <Input
                     label="Phone"
+                    type="tel"
                     placeholder="+91 98765 43210"
-                    {...register("phone")}
+                    {...profileForm.register("phone")}
                   />
                   <Input
                     label="Date of Birth"
                     type="date"
-                    {...register("dateOfBirth")}
+                    {...profileForm.register("dateOfBirth")}
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Gender
                     </label>
                     <select
-                      {...register("gender")}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      {...profileForm.register("gender")}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
-                      <option value="">Prefer not to say</option>
+                      <option value="">Select gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
+                      <option value="prefer-not-to-say">
+                        Prefer not to say
+                      </option>
                     </select>
                   </div>
+                  <Input
+                    label="Email (read-only)"
+                    type="email"
+                    value={user?.email || ""}
+                    readOnly
+                    className="bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
+                  />
                 </div>
               </div>
 
+              {/* Address */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                   Address
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Street Address"
-                    placeholder="123 Main Street"
-                    {...register("address.street")}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="sm:col-span-2">
+                    <Input
+                      label="Street Address"
+                      placeholder="House/Flat no, Street, Area"
+                      {...profileForm.register("address.street")}
+                    />
+                  </div>
                   <Input
                     label="City"
-                    placeholder="Mumbai"
-                    {...register("address.city")}
+                    {...profileForm.register("address.city")}
                   />
                   <Input
                     label="State"
-                    placeholder="Maharashtra"
-                    {...register("address.state")}
+                    {...profileForm.register("address.state")}
                   />
                   <Input
-                    label="Pincode"
-                    placeholder="400001"
-                    {...register("address.pincode")}
+                    label="Country"
+                    {...profileForm.register("address.country")}
                   />
                 </div>
               </div>
 
+              {/* Emergency Contact */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                   Emergency Contact
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <Input
-                    label="Name"
-                    placeholder="Contact name"
-                    {...register("emergencyContact.name")}
-                  />
-                  <Input
-                    label="Relationship"
-                    placeholder="e.g. Spouse"
-                    {...register("emergencyContact.relationship")}
+                    label="Contact Name"
+                    placeholder="Full name"
+                    {...profileForm.register("emergencyContact.name")}
                   />
                   <Input
                     label="Phone"
                     placeholder="+91 98765 43210"
-                    {...register("emergencyContact.phone")}
+                    {...profileForm.register("emergencyContact.phone")}
+                  />
+                  <Input
+                    label="Relationship"
+                    placeholder="e.g. Spouse, Parent"
+                    {...profileForm.register("emergencyContact.relationship")}
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button type="submit" loading={saving}>
-                  Save Changes
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => reset()}
-                >
-                  Discard
+              <div className="flex justify-end pt-2">
+                <Button type="submit" loading={loading}>
+                  <Save className="w-4 h-4" /> Save Profile
                 </Button>
               </div>
             </form>
           )}
 
-          {/* Security Tab */}
+          {/* ── Security Tab ─────────────────────────────── */}
           {activeTab === "security" && (
-            <div className="space-y-6">
+            <div className="max-w-md space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
                   Change Password
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                  Use a strong password with at least 8 characters
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Use a strong password with at least 8 characters, including
+                  uppercase, lowercase, numbers and symbols.
                 </p>
-                <form
-                  onSubmit={handlePwdSubmit(onChangePassword)}
-                  className="space-y-4 max-w-md"
-                >
-                  <Input
-                    label="Current Password"
-                    type="password"
-                    required
-                    error={pwdErrors.currentPassword?.message}
-                    {...regPwd("currentPassword")}
-                  />
-                  <Input
-                    label="New Password"
-                    type="password"
-                    required
-                    error={pwdErrors.newPassword?.message}
-                    {...regPwd("newPassword")}
-                  />
-                  <Input
-                    label="Confirm New Password"
-                    type="password"
-                    required
-                    error={pwdErrors.confirmPassword?.message}
-                    {...regPwd("confirmPassword")}
-                  />
-                  <Button type="submit" loading={pwdSubmitting}>
-                    Update Password
-                  </Button>
-                </form>
               </div>
 
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                  Account Information
-                </h3>
-                <div className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <p>
-                    Employee ID:{" "}
-                    <span className="font-mono font-medium text-gray-900 dark:text-white">
-                      {user.employeeId || "—"}
-                    </span>
-                  </p>
-                  <p>
-                    Account Status:{" "}
-                    <span className="text-green-600 font-medium capitalize">
-                      {user.status}
-                    </span>
-                  </p>
-                  <p>
-                    Last Login:{" "}
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {formatDate(user.lastLogin)}
-                    </span>
-                  </p>
-                  <p>
-                    Joined:{" "}
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {formatDate(user.joiningDate)}
-                    </span>
-                  </p>
+              <form
+                onSubmit={pwdForm.handleSubmit(onChangePassword)}
+                className="space-y-4"
+              >
+                {/* Current password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Current Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPwd ? "text" : "password"}
+                      placeholder="••••••••"
+                      {...pwdForm.register("currentPassword", {
+                        required: "Required",
+                      })}
+                      className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showCurrentPwd ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {pwdForm.formState.errors.currentPassword && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {pwdForm.formState.errors.currentPassword.message}
+                    </p>
+                  )}
                 </div>
+
+                {/* New password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    New Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPwd ? "text" : "password"}
+                      placeholder="Min 8 characters"
+                      {...pwdForm.register("newPassword", {
+                        required: "Required",
+                        minLength: { value: 8, message: "Min 8 characters" },
+                      })}
+                      className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPwd(!showNewPwd)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showNewPwd ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {pwdForm.formState.errors.newPassword && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {pwdForm.formState.errors.newPassword.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Confirm password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Confirm New Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPwd ? "text" : "password"}
+                      placeholder="Repeat new password"
+                      {...pwdForm.register("confirmPassword", {
+                        required: "Required",
+                      })}
+                      className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmPwd ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  loading={pwdForm.formState.isSubmitting}
+                  className="w-full"
+                >
+                  <Lock className="w-4 h-4" /> Update Password
+                </Button>
+              </form>
+
+              {/* Security info */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Account Security
+                </h4>
+                {[
+                  { label: "Employee ID", value: user?.employeeId || "—" },
+                  { label: "Role", value: user?.role, badge: true },
+                  { label: "Status", value: user?.status, badge: true },
+                  {
+                    label: "Last Login",
+                    value: user?.lastLogin ? formatDate(user.lastLogin) : "—",
+                  },
+                  { label: "Member Since", value: formatDate(user?.createdAt) },
+                ].map(({ label, value, badge }) => (
+                  <div
+                    key={label}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {label}
+                    </span>
+                    {badge ? (
+                      <Badge
+                        color={
+                          value === "active"
+                            ? "green"
+                            : value === "admin"
+                              ? "purple"
+                              : "blue"
+                        }
+                      >
+                        {value}
+                      </Badge>
+                    ) : (
+                      <span className="text-gray-900 dark:text-white font-medium">
+                        {value}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}

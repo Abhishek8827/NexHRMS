@@ -5,6 +5,7 @@ import User from './models/User.model.js';
 import https from 'https';
 import http from 'http';
 
+
 const PORT = process.env.PORT || 5000;
 
 const createDefaultAdmin = async () => {
