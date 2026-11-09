@@ -6,8 +6,6 @@ import {
   CheckSquare,
   Plus,
   X,
-  Clock,
-  Flag,
   MessageSquare,
   Calendar,
 } from "lucide-react";
@@ -191,7 +189,7 @@ const Tasks = () => {
   const dispatch = useDispatch();
   const { list, loading } = useSelector((s) => s.tasks);
   const { list: employees } = useSelector((s) => s.employees);
-  const { isAdminOrHR, isManager } = useAuth();
+  const { isAdminOrHR } = useAuth();
 
   const [createModal, setCreateModal] = useState(false);
   const [viewModal, setViewModal] = useState({ open: false, task: null });
@@ -207,7 +205,7 @@ const Tasks = () => {
     project: "",
   });
 
-  const canManage = isAdminOrHR || isManager;
+  const canManage = isAdminOrHR;
 
   useEffect(() => {
     dispatch(fetchTasks());

@@ -9,10 +9,10 @@ const router = Router();
 router.use(protect);
 
 router.get('/my', getMyReviews);
-router.get('/', authorize('admin', 'hr', 'manager'), getAllReviews);
-router.post('/', authorize('admin', 'hr', 'manager'), createReview);
-router.put('/:id', authorize('admin', 'hr', 'manager'), updateReview);
+router.get('/', authorize('admin', 'hr'), getAllReviews);
+router.post('/', authorize('admin', 'hr'), createReview);
+router.put('/:id', authorize('admin', 'hr'), updateReview);
 router.put('/:id/self-review', submitSelfReview);
-router.put('/:id/manager-review', authorize('admin', 'hr', 'manager'), submitManagerReview);
+router.put('/:id/manager-review', authorize('admin', 'hr'), submitManagerReview);
 
 export default router;

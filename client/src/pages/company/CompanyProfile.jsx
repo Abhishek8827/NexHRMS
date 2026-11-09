@@ -19,7 +19,6 @@ import {
   Users,
   Save,
   X,
-  Link,
 } from "lucide-react";
 import {
   fetchCompany,
@@ -28,7 +27,6 @@ import {
   deleteBranch,
   addPolicy,
   deletePolicy,
-  updateOrgStructure,
 } from "../../features/company/companySlice";
 import useAuth from "../../hooks/useAuth";
 import Modal from "../../components/common/Modal";

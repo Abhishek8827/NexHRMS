@@ -9,7 +9,7 @@ const NotificationSchema = new Schema({
   // If empty — broadcast to all matching roles
   recipientRoles: [{
     type: String,
-    enum: ['admin', 'hr', 'manager', 'employee'],
+    enum: ['admin', 'hr', 'employee'],
   }],
   type: {
     type: String,

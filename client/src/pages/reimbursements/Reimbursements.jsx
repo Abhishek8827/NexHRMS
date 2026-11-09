@@ -7,9 +7,7 @@ import {
   Plus,
   CheckCircle,
   XCircle,
-  Clock,
   ChevronDown,
-  Upload,
 } from "lucide-react";
 import {
   fetchReimbursements,
@@ -45,9 +43,9 @@ const statusColor = {
 
 const Reimbursements = () => {
   const dispatch = useDispatch();
-  const { isAdmin, isHR, isManager } = useAuth();
+  const { isAdmin, isHR } = useAuth();
   const { list, loading } = useSelector((s) => s.reimbursements);
-  const canApprove = isAdmin || isHR || isManager;
+  const canApprove = isAdmin || isHR;
 
   const [modal, setModal] = useState(false);
   const [rejectModal, setRejectModal] = useState({ open: false, id: null });

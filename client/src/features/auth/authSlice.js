@@ -1,157 +1,114 @@
-// import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-// import api from '../../services/api';
-
-// export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
-//   try {
-//     const res = await api.post('/auth/login', credentials);
-//     return res.data.data;
-//   } catch (err) {
-//     return rejectWithValue(err.response?.data?.message || 'Login failed');
-//   }
-// });
-
-// export const logoutUser = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
-//   try {
-//     await api.post('/auth/logout');
-//   } catch (err) {
-//     return rejectWithValue(err.response?.data?.message);
-//   }
-// });
-
-// export const getCurrentUser = createAsyncThunk('auth/getMe', async (_, { rejectWithValue }) => {
-//   try {
-//     const res = await api.get('/auth/me');
-//     return res.data.data;
-//   } catch (err) {
-//     return rejectWithValue(err.response?.data?.message);
-//   }
-// });
-
-// const authSlice = createSlice({
-//   name: 'auth',
-//   initialState: {
-//     user: null,
-//     accessToken: null,
-//     isAuthenticated: false,
-//     loading: false,
-//     error: null,
-//   },
-//   reducers: {
-//     setAccessToken: (state, action) => {
-//       state.accessToken = action.payload;
-//     },
-//     logout: (state) => {
-//       state.user = null;
-//       state.accessToken = null;
-//       state.isAuthenticated = false;
-//     },
-//     clearError: (state) => {
-//       state.error = null;
-//     },
-//   },
-//   extraReducers: (builder) => {
-//     builder
-//       .addCase(loginUser.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(loginUser.fulfilled, (state, action) => {
-//         state.loading = false;
-//         state.user = action.payload.user;
-//         state.accessToken = action.payload.accessToken;
-//         state.isAuthenticated = true;
-//       })
-//       .addCase(loginUser.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload;
-//       })
-//       .addCase(logoutUser.fulfilled, (state) => {
-//         state.user = null;
-//         state.accessToken = null;
-//         state.isAuthenticated = false;
-//       })
-//       .addCase(getCurrentUser.fulfilled, (state, action) => {
-//         state.user = action.payload;
-//         state.isAuthenticated = true;
-//       })
-//       .addCase(getCurrentUser.rejected, (state) => {
-//         state.user = null;
-//         state.accessToken = null;
-//         state.isAuthenticated = false;
-//       });
-//   },
-// });
-
-// export const { setAccessToken, logout, clearError } = authSlice.actions;
-// export default authSlice.reducer;
-
-
-// new
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+  signOut,
+  updatePassword,
+} from '@firebase/auth';
 import api from '../../services/api';
+import { firebaseAuth } from '../../services/firebase';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
+    if (!firebaseAuth) {
+      return rejectWithValue('Firebase Authentication is not configured.');
+    }
+
     try {
-      const res = await api.post('/auth/login', credentials);
-      const { user, accessToken } = res.data.data;
-      localStorage.setItem('nexhr_token', accessToken);
-      return { user, accessToken };
-    } catch (err) {
+      await signInWithEmailAndPassword(
+        firebaseAuth,
+        credentials.email.trim(),
+        credentials.password,
+      );
+      return null;
+    } catch (error) {
       return rejectWithValue(
-        err.response?.data?.message || 'Login failed'
+        error.response?.data?.message || 'Unable to sign in. Check your email and password.',
       );
     }
-  }
+  },
 );
 
-export const logoutUser = createAsyncThunk(
-  'auth/logout',
-  async (_, { rejectWithValue }) => {
-    try {
-      await api.post('/auth/logout');
-      localStorage.removeItem('nexhr_token');
-    } catch (err) {
-      localStorage.removeItem('nexhr_token');
-      return rejectWithValue(err.response?.data?.message);
-    }
+export const logoutUser = createAsyncThunk('auth/logout', async () => {
+  if (firebaseAuth?.currentUser) {
+    await signOut(firebaseAuth);
   }
-);
+});
 
 export const getCurrentUser = createAsyncThunk(
   'auth/getMe',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get('/auth/me');
-      return res.data.data;
-    } catch (err) {
-      localStorage.removeItem('nexhr_token');
-      return rejectWithValue(err.response?.data?.message);
+      const response = await api.get('/auth/me');
+      return response.data.data;
+    } catch (error) {
+      if ([401, 403].includes(error.response?.status) && firebaseAuth?.currentUser) {
+        await signOut(firebaseAuth).catch(() => {});
+      }
+
+      return rejectWithValue(
+        error.response?.data?.message || 'Unable to load your account.',
+      );
     }
-  }
+  },
 );
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (profile, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/employees/me', profile);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Unable to update your profile.',
+      );
+    }
+  },
+);
+
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async ({ currentPassword, newPassword }, { rejectWithValue }) => {
+    const firebaseUser = firebaseAuth?.currentUser;
+    if (!firebaseUser?.email) {
+      return rejectWithValue('You must be signed in to change your password.');
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(
+        firebaseUser.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(firebaseUser, credential);
+      await updatePassword(firebaseUser, newPassword);
+      return true;
+    } catch (error) {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        return rejectWithValue('Your current password is incorrect.');
+      }
+      return rejectWithValue(error.message || 'Unable to change your password.');
+    }
+  },
+);
+
+const initialState = {
+  user: null,
+  isAuthenticated: false,
+  loading: false,
+  initialLoading: true,
+  error: null,
+};
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState: {
-    user: null,
-    accessToken: localStorage.getItem('nexhr_token') || null,
-    isAuthenticated: false,
-    loading: false,
-    initialLoading: true,
-    error: null,
-  },
+  initialState,
   reducers: {
-    setAccessToken: (state, action) => {
-      state.accessToken = action.payload;
-      localStorage.setItem('nexhr_token', action.payload);
-    },
-    logout: (state) => {
-      state.user = null;
-      state.accessToken = null;
-      state.isAuthenticated = false;
-      localStorage.removeItem('nexhr_token');
+    clearAuth: () => ({ ...initialState, initialLoading: false }),
+    authReady: (state) => {
+      state.initialLoading = false;
     },
     clearError: (state) => {
       state.error = null;
@@ -159,45 +116,41 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
+      .addCase(loginUser.fulfilled, (state) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
-        state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || action.error.message;
       })
-      // Logout
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.user = null;
-        state.accessToken = null;
-        state.isAuthenticated = false;
-        state.initialLoading = false;
-      })
-      // Get Current User
+      .addCase(logoutUser.fulfilled, () => ({
+        ...initialState,
+        initialLoading: false,
+      }))
       .addCase(getCurrentUser.pending, (state) => {
         state.initialLoading = true;
+        state.error = null;
       })
       .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.user = action.payload;
         state.isAuthenticated = true;
         state.initialLoading = false;
       })
-      .addCase(getCurrentUser.rejected, (state) => {
+      .addCase(getCurrentUser.rejected, (state, action) => {
         state.user = null;
-        state.accessToken = null;
         state.isAuthenticated = false;
         state.initialLoading = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
       });
   },
 });
 
-export const { setAccessToken, logout, clearError } = authSlice.actions;
+export const { authReady, clearAuth, clearError } = authSlice.actions;
 export default authSlice.reducer;

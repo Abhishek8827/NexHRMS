@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import {
   Briefcase,
   Plus,
   Users,
   Eye,
-  ChevronDown,
   MapPin,
   Clock,
   X,

@@ -24,8 +24,7 @@ export const getMyReimbursements = asyncHandler(async (req, res) => {
 // Who sees what:
 // - Admin: ALL reimbursements
 // - HR: ALL reimbursements
-// - Manager: their OWN + their team's reimbursements
-// - Employee: redirect to /my (handled by frontend)
+// Employees use /my for their own reimbursements; Admin and HR see all records.
 // ─────────────────────────────────────────────────────────
 export const getAllReimbursements = asyncHandler(async (req, res) => {
   const { status } = req.query;
@@ -35,19 +34,7 @@ export const getAllReimbursements = asyncHandler(async (req, res) => {
     filter.status = status;
   }
 
-  if (req.user.role === 'manager') {
-    // Manager sees own + team's reimbursements
-    const User = (await import('../models/User.model.js')).default;
-    const team = await User.find({
-      manager: req.user._id,
-      status: 'active',
-    }).select('_id');
 
-    const teamIds = team.map(t => t._id);
-    teamIds.push(req.user._id);
-    filter.employee = { $in: teamIds };
-  }
-  // Admin and HR: no employee filter — see all
 
   const reimbursements = await Reimbursement.find(filter)
     .populate('employee', 'firstName lastName employeeId department designation')

@@ -6,10 +6,10 @@ const router = Router();
 router.use(protect);
 
 router.get('/', getTasks);
-router.post('/', authorize('admin', 'hr', 'manager'), createTask);
+router.post('/', authorize('admin', 'hr'), createTask);
 router.put('/:id', updateTask);
 router.patch('/:id/status', updateTaskStatus);
 router.post('/:id/comment', addComment);
-router.delete('/:id', authorize('admin', 'hr', 'manager'), deleteTask);
+router.delete('/:id', authorize('admin', 'hr'), deleteTask);
 
 export default router;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
@@ -18,7 +18,6 @@ import {
   Settings,
   LogOut,
   X,
-  ChevronRight,
   Building2,
   Menu,
 } from "lucide-react";
@@ -40,25 +39,25 @@ const allNavItems = [
     label: "Dashboard",
     icon: LayoutDashboard,
     path: "/dashboard",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Employees",
     icon: Users,
     path: "/employees",
-    roles: ["admin", "hr", "manager"],
+    roles: ["admin", "hr"],
   },
   {
     label: "Attendance",
     icon: Clock,
     path: "/attendance",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Leaves",
     icon: Calendar,
     path: "/leaves",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Payroll",
@@ -76,25 +75,25 @@ const allNavItems = [
     label: "Tasks",
     icon: CheckSquare,
     path: "/tasks",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Performance",
     icon: Star,
     path: "/performance",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Reimbursements",
     icon: Receipt,
     path: "/reimbursements",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Complaints",
     icon: MessageSquare,
     path: "/complaints",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     label: "Reports",
@@ -119,14 +118,12 @@ const allNavItems = [
 const roleColors = {
   admin: "from-violet-500 to-indigo-600",
   hr: "from-blue-500 to-cyan-600",
-  manager: "from-emerald-500 to-teal-600",
   employee: "from-orange-500 to-amber-600",
 };
 
 const roleLabel = {
   admin: "Super Admin",
   hr: "HR Manager",
-  manager: "Team Manager",
   employee: "Employee",
 };
 
@@ -135,6 +132,22 @@ const MobileNav = ({ companyName }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setDrawerOpen(false);
+    };
+
+    document.addEventListener('keydown', closeOnEscape);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.body.style.overflow = '';
+    };
+  }, [drawerOpen]);
 
   const gradient = roleColors[user?.role] || roleColors.employee;
 
@@ -147,11 +160,6 @@ const MobileNav = ({ companyName }) => {
   const filteredNav = allNavItems.filter((item) =>
     item.roles.includes(user?.role),
   );
-
-  // Split into two columns for the drawer grid
-  const half = Math.ceil(filteredNav.length / 2);
-  const col1 = filteredNav.slice(0, half);
-  const col2 = filteredNav.slice(half);
 
   return (
     <>

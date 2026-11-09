@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, User, Briefcase, DollarSign, Phone } from "lucide-react";
+import { ArrowLeft, User, Briefcase, DollarSign } from "lucide-react";
 import {
   createEmployee,
   updateEmployee,
@@ -17,6 +17,7 @@ import {
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 import Spinner from "../../components/common/Spinner";
+import useAuth from "../../hooks/useAuth";
 
 // Validation schemas
 const createSchema = z.object({
@@ -25,7 +26,7 @@ const createSchema = z.object({
   email: z.string().email("Valid email required"),
   password: z.string().min(8, "Min 8 characters"),
   phone: z.string().optional(),
-  role: z.enum(["admin", "hr", "manager", "employee"]),
+  role: z.enum(["admin", "hr", "employee"]),
   designation: z.string().optional(),
   department: z.string().optional(),
   joiningDate: z.string().optional(),
@@ -37,7 +38,7 @@ const editSchema = z.object({
   firstName: z.string().min(2, "Min 2 characters"),
   lastName: z.string().min(2, "Min 2 characters"),
   phone: z.string().optional(),
-  role: z.enum(["admin", "hr", "manager", "employee"]),
+  role: z.enum(["admin", "hr", "employee"]),
   designation: z.string().optional(),
   department: z.string().optional(),
   joiningDate: z.string().optional(),
@@ -85,6 +86,7 @@ const EmployeeForm = () => {
   const { selected, departments, formLoading } = useSelector(
     (s) => s.employees,
   );
+  const { isAdmin } = useAuth();
 
   const {
     register,
@@ -111,7 +113,7 @@ const EmployeeForm = () => {
         firstName: selected.firstName || "",
         lastName: selected.lastName || "",
         phone: selected.phone || "",
-        role: selected.role || "employee",
+        role: selected.role === "manager" ? "employee" : selected.role || "employee",
         designation: selected.designation || "",
         department: selected.department?._id || selected.department || "",
         joiningDate: selected.joiningDate
@@ -236,14 +238,19 @@ const EmployeeForm = () => {
             </SelectField>
 
             {!isEdit && (
-              <Input
-                label="Password"
-                type="password"
-                required
-                placeholder="Min 8 characters"
-                error={errors.password?.message}
-                {...register("password")}
-              />
+              <>
+                <Input
+                  label="Temporary sign-in password"
+                  type="password"
+                  required
+                  placeholder="At least 8 characters"
+                  error={errors.password?.message}
+                  {...register("password")}
+                />
+                <p className="text-xs text-gray-500 sm:col-span-2">
+                  Share this password with the employee through a secure channel.
+                </p>
+              </>
             )}
           </div>
         </motion.div>
@@ -261,17 +268,27 @@ const EmployeeForm = () => {
             subtitle="Role, department and designation"
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <SelectField
-              label="Role"
-              required
-              error={errors.role?.message}
-              {...register("role")}
-            >
-              <option value="employee">Employee</option>
-              <option value="manager">Manager</option>
-              <option value="hr">HR Manager</option>
-              <option value="admin">Admin</option>
-            </SelectField>
+            {isAdmin ? (
+              <SelectField
+                label="Role"
+                required
+                error={errors.role?.message}
+                {...register("role")}
+              >
+                <option value="employee">Employee</option>
+                <option value="hr">HR Manager</option>
+                <option value="admin">Admin</option>
+              </SelectField>
+            ) : isEdit ? (
+              <div>
+                <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Role
+                </p>
+                <p className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
+                  {selected?.role === "hr" ? "HR Manager" : selected?.role === "admin" ? "Admin" : "Employee"}
+                </p>
+              </div>
+            ) : null}
 
             <SelectField
               label="Department"

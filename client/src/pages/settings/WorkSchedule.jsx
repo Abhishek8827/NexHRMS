@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import {
@@ -42,28 +42,34 @@ const WorkSchedule = () => {
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchSchedules();
-    fetchDepartments();
-  }, []);
-
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     try {
-      const res = await api.get("/schedules");
-      setSchedules(res.data.data);
+      const response = await api.get("/schedules");
+      setSchedules(response.data.data);
     } catch {
       toast.error("Failed to load schedules");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchDepartments = async () => {
+  const fetchDepartments = useCallback(async () => {
     try {
-      const res = await api.get("/departments");
-      setDepartments(res.data.data);
-    } catch {}
-  };
+      const response = await api.get("/departments");
+      setDepartments(response.data.data);
+    } catch {
+      toast.error("Failed to load departments");
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      fetchSchedules();
+      fetchDepartments();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [fetchSchedules, fetchDepartments]);
 
   const openCreate = () => {
     setForm(defaultForm);

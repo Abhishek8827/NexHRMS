@@ -22,15 +22,14 @@ import Spinner from "../../components/common/Spinner";
 import Badge from "../../components/common/Badge";
 import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
-import { formatCurrency, formatDate } from "../../utils/helpers";
+import { formatCurrency } from "../../utils/helpers";
 import { MONTHS } from "../../utils/constants";
-import api from "../../services/api";
 
 const statusColor = { draft: "gray", processed: "blue", paid: "green" };
 
 const Payroll = () => {
   const dispatch = useDispatch();
-  const { isAdminOrHR, user } = useAuth();
+  const { isAdminOrHR } = useAuth();
   const { allRecords, myPayslips, loading, processing } = useSelector(
     (s) => s.payroll,
   );
