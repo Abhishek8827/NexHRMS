@@ -29,26 +29,42 @@ const WorkScheduleSchema = new Schema({
 
   // Punch-in window
   punchInTime: {
-    hour: { type: Number, default: 9 },     // 9 AM
-    minute: { type: Number, default: 0 },
+    hour: { type: Number, default: 9, min: 0, max: 23 },
+    minute: { type: Number, default: 0, min: 0, max: 59 },
   },
 
   // Grace period — minutes allowed after punchInTime before marking late
   gracePeriodMinutes: {
     type: Number,
     default: 15,
+    min: 0,
+    max: 180,
+  },
+
+  lateMarkingEnabled: {
+    type: Boolean,
+    default: true,
+  },
+
+  halfDayThresholdPercent: {
+    type: Number,
+    default: 50,
+    min: 0,
+    max: 100,
   },
 
   // Standard punch-out time (for overtime calculation)
   punchOutTime: {
-    hour: { type: Number, default: 18 },    // 6 PM
-    minute: { type: Number, default: 0 },
+    hour: { type: Number, default: 18, min: 0, max: 23 },
+    minute: { type: Number, default: 0, min: 0, max: 59 },
   },
 
   // Standard working hours per day
   standardHours: {
     type: Number,
     default: 8,
+    min: 0.25,
+    max: 24,
   },
 
   // Is this the default/fallback schedule?
