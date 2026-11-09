@@ -31,7 +31,7 @@ import {
 } from "../../utils/helpers";
 
 const STATUS_OPTIONS = ["all", "active", "inactive", "terminated"];
-const ROLE_OPTIONS = ["all", "admin", "hr", "manager", "employee"];
+const ROLE_OPTIONS = ["all", "admin", "hr", "employee"];
 
 const EmployeeCard = ({ emp, isAdminOrHR, onEdit, onDeactivate }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
@@ -146,9 +146,20 @@ const EmployeeList = () => {
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => {
+  const handleSearchChange = (value) => {
     setPage(1);
-  }, [debouncedSearch, filters]);
+    setSearch(value);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setPage(1);
+    setFilters((current) => ({ ...current, [key]: value }));
+  };
+
+  const resetFilters = () => {
+    setPage(1);
+    setFilters({ status: 'active', role: 'all', department: 'all' });
+  };
 
   useEffect(() => {
     const params = {
@@ -212,11 +223,11 @@ const EmployeeList = () => {
               type="text"
               placeholder="Search by name, email or ID..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="bg-transparent text-sm outline-none text-gray-700 dark:text-gray-300 w-full placeholder:text-gray-400"
             />
             {search && (
-              <button onClick={() => setSearch("")}>
+              <button onClick={() => handleSearchChange("")}>
                 <X className="w-4 h-4 text-gray-400" />
               </button>
             )}
@@ -235,9 +246,7 @@ const EmployeeList = () => {
           </button>
           {activeFilterCount > 0 && (
             <button
-              onClick={() =>
-                setFilters({ status: "active", role: "all", department: "all" })
-              }
+              onClick={resetFilters}
               className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1"
             >
               <X className="w-3 h-3" />
@@ -263,7 +272,7 @@ const EmployeeList = () => {
                     {STATUS_OPTIONS.map((s) => (
                       <button
                         key={s}
-                        onClick={() => setFilters((f) => ({ ...f, status: s }))}
+                        onClick={() => handleFilterChange('status', s)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${filters.status === s ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"}`}
                       >
                         {s}
@@ -279,7 +288,7 @@ const EmployeeList = () => {
                     {ROLE_OPTIONS.map((r) => (
                       <button
                         key={r}
-                        onClick={() => setFilters((f) => ({ ...f, role: r }))}
+                        onClick={() => handleFilterChange('role', r)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${filters.role === r ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"}`}
                       >
                         {r}
@@ -293,9 +302,7 @@ const EmployeeList = () => {
                   </label>
                   <select
                     value={filters.department}
-                    onChange={(e) =>
-                      setFilters((f) => ({ ...f, department: e.target.value }))
-                    }
+                    onChange={(e) => handleFilterChange('department', e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="all">All Departments</option>

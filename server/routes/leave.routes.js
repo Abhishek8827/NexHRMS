@@ -12,10 +12,10 @@ router.use(protect);
 router.post('/apply', applyLeave);
 router.get('/my', getMyLeaves);
 router.get('/balance', getLeaveBalance);
-router.get('/pending', authorize('admin', 'hr', 'manager'), getPendingLeaves);
+router.get('/pending', authorize('admin', 'hr'), getPendingLeaves);
 router.get('/all', authorize('admin', 'hr'), getAllLeaves);
-router.put('/:id/approve', authorize('admin', 'hr', 'manager'), approveLeave);
-router.put('/:id/reject', authorize('admin', 'hr', 'manager'), rejectLeave);
+router.put('/:id/approve', authorize('admin', 'hr'), approveLeave);
+router.put('/:id/reject', authorize('admin', 'hr'), rejectLeave);
 router.put('/:id/cancel', cancelLeave);
 
 export default router;

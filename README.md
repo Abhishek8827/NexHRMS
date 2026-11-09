@@ -79,12 +79,9 @@ Response sent to frontend
 - Handle complaints and reimbursements
 - View reports
 
-### Managers
+### Team leads
 
-- Monitor team attendance
-- Review leave requests
-- Assign tasks
-- Review employee performance
+Team leads sign in as Employees; the app does not grant a separate Manager role. HR handles company-wide approvals in this release.
 
 ### Employees
 
@@ -132,10 +129,10 @@ Response sent to frontend
 - Reports and analytics
 - Responsive UI
 - Dark/light mode
-- JWT authentication
+- Firebase Authentication with verified ID tokens
 - Role-Based Access Control
 - Protected routes
-- Password hashing
+- Firebase-managed password security
 - CORS and security middleware
 
 ---
@@ -144,10 +141,11 @@ Response sent to frontend
 
 | Role | Access |
 |---|---|
-| Admin | Full system access |
-| HR Manager | Employees, payroll, leaves, recruitment, reports |
-| Manager | Team attendance, leaves, tasks, performance |
-| Employee | Personal HR features |
+| Admin | Company settings, access control, audit oversight, and payroll approval |
+| HR | Employee records, attendance, leave approvals, and payroll preparation |
+| Employee | Personal profile, attendance, leave requests, and self-service features |
+
+Team leads use the Employee account type with manager/team assignments; they do not have a separate login role.
 
 ---
 
@@ -173,11 +171,7 @@ Response sent to frontend
 - Express.js
 - MongoDB
 - Mongoose
-- JWT
-- bcryptjs
-- Nodemailer
-- Multer
-- Cloudinary
+- Firebase Admin SDK (server-side ID-token verification)
 - Helmet
 - CORS
 - Express Rate Limit
@@ -246,7 +240,7 @@ MongoDB
 Install:
 
 - Git
-- Node.js 18+
+- Node.js 22+
 - npm
 - VS Code
 - MongoDB Atlas account
@@ -354,51 +348,20 @@ mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/nexhr
 
 # Environment Variables
 
-## Backend
+## Firebase Authentication setup
 
-Create:
+1. Create a Firebase project and enable **Email/Password** under Authentication → Sign-in method.
+2. Register the web app in Firebase and copy its public web configuration into `client/.env` using `client/.env.example` as a template.
+3. Create a Firebase service account for the backend. Store its full JSON privately in `FIREBASE_SERVICE_ACCOUNT_JSON` in the server environment; do not commit it.
+4. Set `ADMIN_EMAIL` to the email of the first Firebase Admin account. Create that sign-in in Firebase and verify its email. The backend creates the matching HRMS profile on startup.
 
-```text
-server/.env
-```
+Existing MongoDB staff profiles can be linked at first sign-in when a Firebase account with the same verified email exists. MongoDB passwords are not migrated to Firebase; existing staff need Firebase accounts provisioned and a password reset or temporary password before they can sign in. New staff accounts created in the app are provisioned in Firebase with the temporary password set by Admin/HR. Back up the database before rollout: legacy Manager roles are converted to Employee roles at server startup, and Manager-only permissions are removed.
 
-Add:
+## Local configuration
 
-```env
-NODE_ENV=development
-PORT=5000
+Copy `server/.env.example` to `server/.env` and `client/.env.example` to `client/.env`. Set the database and Firebase values for your environment. The Firebase web configuration is public application configuration; the service-account JSON is a private server secret.
 
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/nexhr
-
-ACCESS_TOKEN_SECRET=your_long_access_secret
-REFRESH_TOKEN_SECRET=your_different_refresh_secret
-
-ACCESS_TOKEN_EXPIRY=15m
-REFRESH_TOKEN_EXPIRY=7d
-
-CLIENT_URL=http://localhost:5173
-
-ADMIN_EMAIL=admin@nexhr.com
-ADMIN_PASSWORD=Admin@123456
-ADMIN_FIRST_NAME=System
-ADMIN_LAST_NAME=Administrator
-```
-
-## Frontend
-
-Create:
-
-```text
-client/.env
-```
-
-Add:
-
-```env
-VITE_API_URL=http://localhost:5000/api/v1
-```
-
-> Never commit real `.env` files or secrets to GitHub.
+Never commit real `.env` files, service-account JSON, or production credentials.
 
 ---
 
@@ -448,16 +411,9 @@ Open the frontend URL in your browser.
 
 ---
 
-# Default Admin
+# First Admin Account
 
-The backend creates an admin account automatically when no admin exists.
-
-```text
-Email:    admin@nexhr.com
-Password: Admin@123456
-```
-
-> Change the default password before production use.
+Set `ADMIN_EMAIL`, `ADMIN_FIRST_NAME`, and `ADMIN_LAST_NAME` on the backend. On startup, the backend creates an Admin HRMS profile for that email if one does not already exist. Create the matching account in Firebase Authentication and verify its email before signing in. No default password is created.
 
 ---
 
@@ -499,19 +455,11 @@ Abhishek8827/NexHRMS
 
 ```env
 NODE_ENV=production
-
 MONGODB_URI=your_mongodb_atlas_connection_string
-
-ACCESS_TOKEN_SECRET=your_production_access_secret
-REFRESH_TOKEN_SECRET=your_production_refresh_secret
-
-ACCESS_TOKEN_EXPIRY=15m
-REFRESH_TOKEN_EXPIRY=7d
-
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_SERVICE_ACCOUNT_JSON=store-the-full-service-account-json-as-a-secret
 CLIENT_URL=https://YOUR-VERCEL-APP.vercel.app
-
-ADMIN_EMAIL=your-admin-email
-ADMIN_PASSWORD=your-strong-admin-password
+ADMIN_EMAIL=first-admin@your-company.com
 ADMIN_FIRST_NAME=System
 ADMIN_LAST_NAME=Administrator
 ```
@@ -567,8 +515,12 @@ Output Directory: dist
 
 In Vercel → Settings → Environment Variables:
 
-```text
+```env
 VITE_API_URL=https://YOUR-RENDER-APP.onrender.com/api/v1
+VITE_FIREBASE_API_KEY=your-firebase-web-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
+VITE_FIREBASE_APP_ID=your-firebase-web-app-id
 ```
 
 Deploy.
@@ -639,8 +591,9 @@ CLIENT_URL=https://YOUR-VERCEL-APP.vercel.app
 - [ ] Vercel frontend is deployed
 - [ ] `VITE_API_URL` is correct
 - [ ] `CLIENT_URL` is correct
-- [ ] JWT secrets are strong
-- [ ] Default admin password is changed
+- [ ] Firebase Email/Password provider is enabled
+- [ ] Firebase service-account credentials are stored only in server secrets
+- [ ] Admin account is created in Firebase and verified
 - [ ] `.env` is not committed
 - [ ] Login works
 - [ ] Employees work
@@ -761,13 +714,13 @@ MongoDB
 ### 3. Learn Authentication
 
 ```text
-Login
+Firebase Sign-in
  ↓
-JWT
+Firebase ID Token
  ↓
 Protected Request
  ↓
-Auth Middleware
+Firebase Admin Verification
  ↓
 Role Check
  ↓

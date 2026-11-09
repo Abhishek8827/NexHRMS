@@ -8,23 +8,40 @@ import http from 'http';
 
 const PORT = process.env.PORT || 5000;
 
-const createDefaultAdmin = async () => {
-  try {
-    const exists = await User.findOne({ role: 'admin' });
-    if (!exists) {
-      await User.create({
-        firstName: process.env.ADMIN_FIRST_NAME || 'System',
-        lastName: process.env.ADMIN_LAST_NAME || 'Administrator',
-        email: process.env.ADMIN_EMAIL || 'admin@nexhr.com',
-        password: process.env.ADMIN_PASSWORD || 'Admin@123456',
-        role: 'admin',
-        status: 'active',
-        employeeId: 'EMP-001',
-      });
-      console.log('✅ Default admin created');
-    }
-  } catch (err) {
-    console.error('Admin seed error:', err.message);
+const ensureBootstrapAdmin = async () => {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+
+  if (!email) {
+    console.log('ADMIN_EMAIL is not set; no bootstrap admin was created.');
+    return;
+  }
+
+  const existingAccount = await User.findOne({ email });
+  if (existingAccount) {
+    existingAccount.role = 'admin';
+    await existingAccount.save({ validateBeforeSave: false });
+    console.log('✅ Bootstrap admin role assigned to configured account');
+    return;
+  }
+
+  await User.create({
+    firstName: process.env.ADMIN_FIRST_NAME || 'System',
+    lastName: process.env.ADMIN_LAST_NAME || 'Administrator',
+    email,
+    role: 'admin',
+    status: 'active',
+  });
+  console.log('✅ Bootstrap admin profile created; provision its Firebase sign-in separately');
+};
+
+const migrateLegacyManagerRoles = async () => {
+  const result = await User.updateMany(
+    { role: 'manager' },
+    { $set: { role: 'employee' } },
+  );
+
+  if (result.modifiedCount > 0) {
+    console.log(`✅ Converted ${result.modifiedCount} legacy manager accounts to employee accounts`);
   }
 };
 
@@ -67,7 +84,8 @@ const startKeepAlive = () => {
 
 const startServer = async () => {
   await connectDB();
-  await createDefaultAdmin();
+  await migrateLegacyManagerRoles();
+  await ensureBootstrapAdmin();
   await seedDepartments();
 
   app.listen(PORT, () => {

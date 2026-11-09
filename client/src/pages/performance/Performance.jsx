@@ -13,7 +13,6 @@ import {
   User,
   Target,
   BarChart2,
-  MessageSquare,
 } from "lucide-react";
 import {
   fetchMyReviews,
@@ -28,8 +27,7 @@ import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
-import Input from "../../components/common/Input";
-import { formatDate, getInitials } from "../../utils/helpers";
+import { getInitials } from "../../utils/helpers";
 
 const QUARTERS = [1, 2, 3, 4];
 
@@ -635,9 +633,9 @@ const Performance = () => {
   const dispatch = useDispatch();
   const { myReviews, allReviews, loading } = useSelector((s) => s.performance);
   const { list: employees } = useSelector((s) => s.employees);
-  const { user, isAdminOrHR, isManager } = useAuth();
+  const { user, isAdminOrHR } = useAuth();
 
-  const canManage = isAdminOrHR || isManager;
+  const canManage = isAdminOrHR;
 
   const [activeTab, setActiveTab] = useState("my-reviews");
   const [createModal, setCreateModal] = useState(false);

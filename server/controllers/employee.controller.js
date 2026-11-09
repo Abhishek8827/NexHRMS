@@ -53,6 +53,33 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
   );
 });
 
+export const updateOwnProfile = asyncHandler(async (req, res) => {
+  const allowedFields = [
+    'firstName', 'lastName', 'phone', 'dateOfBirth', 'gender',
+    'address', 'emergencyContact',
+  ];
+  const updateData = {};
+
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
+    }
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: updateData },
+    { new: true, runValidators: true },
+  )
+    .select('-password -refreshToken')
+    .populate('department', 'name code')
+    .populate('manager', 'firstName lastName designation');
+
+  return res.status(200).json(
+    new ApiResponse(200, user, 'Profile updated successfully'),
+  );
+});
+
 export const getEmployeeById = asyncHandler(async (req, res) => {
   const employee = await User.findById(req.params.id)
     .select('-password -refreshToken')

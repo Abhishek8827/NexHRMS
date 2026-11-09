@@ -1,5 +1,4 @@
 import PerformanceReview from '../models/PerformanceReview.model.js';
-import User from '../models/User.model.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -26,13 +25,7 @@ export const getAllReviews = asyncHandler(async (req, res) => {
   if (status) filter.status = status;
   if (employee) filter.employee = employee;
 
-  // Managers only see their team
-  if (req.user.role === 'manager') {
-    const team = await User.find({
-      manager: req.user._id
-    }).select('_id');
-    filter.employee = { $in: team.map(t => t._id) };
-  }
+
 
   const reviews = await PerformanceReview.find(filter)
     .populate('employee', 'firstName lastName employeeId designation department')

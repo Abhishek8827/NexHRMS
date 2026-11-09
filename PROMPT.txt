@@ -4,8 +4,8 @@ CURRENT PROJECT STATUS
 > Backend Progress:
 [✓] MongoDB Atlas connected
 [✓] Express backend running
-[✓] JWT authentication working
-[✓] Admin login API working
+[✓] Firebase Authentication is the selected identity provider
+[ ] Firebase ID-token verification and account migration stabilization
 
 > Frontend Progress:
 [✓] React app created
@@ -98,11 +98,11 @@ ROLE HIERARCHY
 Enterprise role hierarchy:
 Admin
 ↓
-HR Manager
-↓
-Manager
+HR
 ↓
 Employee
+
+Team leads remain Employees with manager/team assignments; they are not a separate login role.
 
 
 RBAC SYSTEM
@@ -112,21 +112,14 @@ ADMIN:
 - payroll visibility
 - attendance monitoring
 - employee monitoring
-- create HR managers
+- create HR accounts
 - manage settings
 
-HR MANAGER:
-- manage employees/managers
-- payroll workflows
-- attendance management
-- leave approvals
+HR:
+- manage employee records and payroll workflows
+- manage attendance and leave approvals
 - onboarding/offboarding
-
-MANAGER:
-- manage own team only
-- approve employee leave
-- assign tasks
-- monitor attendance
+- handle team-lead workflows until dedicated employee permissions are designed
 
 EMPLOYEE:
 - self profile access
@@ -140,14 +133,10 @@ EMPLOYEE:
 WORKFLOW APPROVAL SYSTEM
 Employee Requests:
 Employee
-→ Manager Approval
 → HR Approval
 → Admin Monitoring
 
-Manager Requests:
-Manager
-→ HR Approval
-→ Admin Monitoring
+Team-lead requests use the Employee login and follow the HR approval path.
 
 HR Requests:
 HR
@@ -185,11 +174,12 @@ After Phase :
 DO NOT move ahead until Phase 1 is stable.
 
 PHASE — ROLE-BASED DASHBOARDS
-Build separate dashboards for:
+Build dashboards for the three login roles:
 - Admin
-- HR Manager
-- Manager
+- HR
 - Employee
+
+Team leads use an Employee account and do not receive a separate role-based dashboard.
 
 Admin Dashboard:
 - analytics
@@ -202,11 +192,6 @@ HR Dashboard:
 - employee management
 - attendance management
 - leave approvals
-
-Manager Dashboard:
-- team management
-- team attendance
-- task assignment
 
 Employee Dashboard:
 - self attendance
