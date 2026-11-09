@@ -1,41 +1,16 @@
-import { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import MobileNav from "./MobileNav";
 import { clsx } from "clsx";
-import { AnimatePresence, motion } from "framer-motion";
 
 const Layout = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const location = useLocation();
 
   // Get company name from Redux store if available
   const companyName = useSelector((s) => s.company?.profile?.name);
-
-  // Close drawer on route change
-  useEffect(() => {
-    setMobileDrawerOpen(false);
-  }, [location.pathname]);
-
-  // Escape key closes drawer
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "Escape") setMobileDrawerOpen(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
-  // Lock body scroll when mobile drawer open
-  useEffect(() => {
-    document.body.style.overflow = mobileDrawerOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mobileDrawerOpen]);
 
   const handleNavbarMenuClick = () => {
     // On mobile → MobileNav handles its own state

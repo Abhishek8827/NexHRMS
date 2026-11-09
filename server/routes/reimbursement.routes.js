@@ -12,8 +12,7 @@ router.use(protect);
 
 router.get('/my', getMyReimbursements);
 
-// FIXED: added 'manager' — controller already filters by team for managers
-router.get('/', authorize('admin', 'hr', 'manager'), getAllReimbursements);
+router.get('/', authorize('admin', 'hr'), getAllReimbursements);
 
 router.post('/', createReimbursement);
 

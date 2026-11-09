@@ -13,7 +13,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { BarChart2, Users, Clock, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Clock, DollarSign, TrendingUp } from "lucide-react";
 import api from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 import { formatCurrency } from "../../utils/helpers";

@@ -1,5 +1,6 @@
 import Leave from '../models/Leave.model.js';
 import Attendance from '../models/Attendance.model.js';
+import User from '../models/User.model.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -106,30 +107,13 @@ export const getMyLeaves = asyncHandler(async (req, res) => {
 
 // ─────────────────────────────────────────────────────────
 // GET /api/v1/leaves/pending
-// Who can call: admin, hr, manager
-// admin/hr = see ALL pending leaves
-// manager = see ONLY their team's pending leaves
+// Who can call: admin, hr
+// Admin and HR can see all pending leaves
 // ─────────────────────────────────────────────────────────
 export const getPendingLeaves = asyncHandler(async (req, res) => {
   const filter = { status: 'pending' };
 
-  if (req.user.role === 'manager') {
-    // Manager only sees employees who report to them
-    const User = (await import('../models/User.model.js')).default;
-    // import User from '../models/User.model.js';
-    const team = await User.find({
-      manager: req.user._id,
-      status: 'active',
-    }).select('_id');
 
-    if (team.length === 0) {
-      return res.status(200).json(
-        new ApiResponse(200, [], 'No team members found')
-      );
-    }
-
-    filter.employee = { $in: team.map(t => t._id) };
-  }
 
   const leaves = await Leave.find(filter)
     .populate('employee', 'firstName lastName employeeId department designation avatar')
@@ -161,7 +145,7 @@ export const getAllLeaves = asyncHandler(async (req, res) => {
 
 // ─────────────────────────────────────────────────────────
 // PUT /api/v1/leaves/:id/approve
-// Who can call: admin, hr, manager (manager only for their team)
+// Who can call: admin, hr (manager only for their team)
 // ─────────────────────────────────────────────────────────
 export const approveLeave = asyncHandler(async (req, res) => {
   const leave = await Leave.findById(req.params.id)
@@ -173,14 +157,7 @@ export const approveLeave = asyncHandler(async (req, res) => {
     throw new ApiError(400, `Leave is already ${leave.status}`);
   }
 
-  // Manager can only approve their own team's leaves
-  if (req.user.role === 'manager') {
-    const isTeamMember =
-      leave.employee.manager?.toString() === req.user._id.toString();
-    if (!isTeamMember) {
-      throw new ApiError(403, 'You can only approve leaves for your team members');
-    }
-  }
+
 
   // Mark each working day as on-leave in Attendance
   let current = dayjs(leave.from);
@@ -236,7 +213,7 @@ export const approveLeave = asyncHandler(async (req, res) => {
 
 // ─────────────────────────────────────────────────────────
 // PUT /api/v1/leaves/:id/reject
-// Who can call: admin, hr, manager
+// Who can call: admin, hr
 // ─────────────────────────────────────────────────────────
 export const rejectLeave = asyncHandler(async (req, res) => {
   const { reason } = req.body;

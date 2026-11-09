@@ -1,18 +1,19 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const { Schema, model } = mongoose;
 
 const UserSchema = new Schema({
   employeeId: { type: String, unique: true, sparse: true },
+  firebaseUid: { type: String, unique: true, sparse: true, select: false },
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, minlength: 8, select: false },
+  // Legacy hashes may remain in existing documents during the Firebase migration.
+  password: { type: String, select: false },
   phone: { type: String, trim: true },
   role: {
     type: String,
-    enum: ['admin', 'hr', 'manager', 'employee'],
+    enum: ['admin', 'hr', 'employee'],
     default: 'employee',
   },
   department: { type: Schema.Types.ObjectId, ref: 'Department' },
@@ -53,16 +54,6 @@ const UserSchema = new Schema({
 UserSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
-
-UserSchema.pre('save', async function () {
-  if (!this.isModified('password')) return;
-
-  this.password = await bcrypt.hash(this.password, 12);
-});
-
-UserSchema.methods.isPasswordCorrect = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
 
 // UserSchema.index({ email: 1 });
 // UserSchema.index({ employeeId: 1 });

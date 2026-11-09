@@ -16,8 +16,8 @@ export const getJobs = asyncHandler(async (req, res) => {
 
   let filter = {};
 
-  // Employees and managers only see open jobs
-  if (req.user.role === 'employee' || req.user.role === 'manager') {
+  // Employees only see open jobs
+  if (req.user.role === 'employee') {
     filter.status = 'open';
   } else if (status) {
     // Admin/HR can filter by any status
@@ -56,8 +56,8 @@ export const createJob = asyncHandler(async (req, res) => {
       title: '💼 New Job Opening',
       message: `New position available: ${job.title}${populated.department ? ` — ${populated.department.name}` : ''}. ${job.openings} opening${job.openings > 1 ? 's' : ''} available.`,
       link: '/recruitment',
-      // Send to ALL employees and managers
-      recipientRoles: ['employee', 'manager'],
+      // Send to all employees
+      recipientRoles: ['employee'],
       createdBy: req.user._id,
       data: { jobId: job._id },
     });
@@ -91,7 +91,7 @@ export const updateJob = asyncHandler(async (req, res) => {
       title: '💼 New Job Opening',
       message: `Position now open: ${job.title}${job.department ? ` — ${job.department.name}` : ''}`,
       link: '/recruitment',
-      recipientRoles: ['employee', 'manager'],
+      recipientRoles: ['employee'],
       createdBy: req.user._id,
       data: { jobId: job._id },
     });

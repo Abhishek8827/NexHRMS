@@ -402,78 +402,6 @@ const HRDashboard = ({ stats }) => {
   );
 };
 
-const ManagerDashboard = ({ today, punchLoading, onPunchIn, onPunchOut }) => {
-  const navigate = useNavigate();
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      <PunchCard
-        today={today}
-        loading={punchLoading}
-        onPunchIn={onPunchIn}
-        onPunchOut={onPunchOut}
-      />
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <DashCard
-          title="My Team"
-          value="—"
-          sub="Active members"
-          icon={Users}
-          color="blue"
-          delay={0.1}
-          onClick={() => navigate("/employees")}
-        />
-        <DashCard
-          title="Leave Requests"
-          value="—"
-          sub="Pending"
-          icon={Calendar}
-          color="yellow"
-          delay={0.15}
-          onClick={() => navigate("/leaves")}
-        />
-        <DashCard
-          title="Tasks Assigned"
-          value="—"
-          icon={CheckSquare}
-          color="purple"
-          delay={0.2}
-          onClick={() => navigate("/tasks")}
-        />
-      </div>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800"
-      >
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <QuickBtn
-            icon={Calendar}
-            label="Leave Approvals"
-            color="text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20"
-            onClick={() => navigate("/leaves")}
-          />
-          <QuickBtn
-            icon={CheckSquare}
-            label="Assign Task"
-            color="text-blue-600 bg-blue-50 dark:bg-blue-900/20"
-            onClick={() => navigate("/tasks")}
-          />
-          <QuickBtn
-            icon={Clock}
-            label="Attendance"
-            color="text-green-600 bg-green-50 dark:bg-green-900/20"
-            onClick={() => navigate("/attendance")}
-          />
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
 const EmployeeDashboard = ({ today, punchLoading, onPunchIn, onPunchOut }) => {
   const navigate = useNavigate();
   const [leaveBalance, setLeaveBalance] = useState(null);
@@ -577,20 +505,17 @@ const EmployeeDashboard = ({ today, punchLoading, onPunchIn, onPunchOut }) => {
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { user, isAdmin, isHR, isManager, isAdminOrHR } = useAuth();
-  const { today, loading, punchLoading } = useSelector((s) => s.attendance);
+  const { user, isAdmin, isHR, isAdminOrHR } = useAuth();
+  const { today, punchLoading } = useSelector((s) => s.attendance);
   const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTodayAttendance());
     if (isAdminOrHR) {
-      setStatsLoading(true);
       api
         .get("/reports/dashboard")
         .then((res) => setStats(res.data.data))
-        .catch(() => {})
-        .finally(() => setStatsLoading(false));
+        .catch(() => {});
     }
     const a = setInterval(() => dispatch(fetchTodayAttendance()), 60000);
     const s = setInterval(() => {
@@ -626,7 +551,6 @@ const Dashboard = () => {
   const roleLabel = {
     admin: "⚡ Super Admin",
     hr: "👥 HR Manager",
-    manager: "📋 Team Manager",
     employee: "💼 Employee",
   };
 
@@ -664,14 +588,6 @@ const Dashboard = () => {
       )}
       {isAdmin && <AdminDashboard stats={stats} />}
       {isHR && <HRDashboard stats={stats} />}
-      {isManager && (
-        <ManagerDashboard
-          today={today}
-          punchLoading={punchLoading}
-          onPunchIn={handlePunchIn}
-          onPunchOut={handlePunchOut}
-        />
-      )}
       {user?.role === "employee" && (
         <EmployeeDashboard
           today={today}

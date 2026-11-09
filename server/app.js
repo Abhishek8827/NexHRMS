@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import errorHandler from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
@@ -63,7 +62,6 @@ app.options(/.*/, cors());
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
 app.use(compression());
 
 if (process.env.NODE_ENV === 'development') {

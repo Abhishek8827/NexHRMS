@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
@@ -7,13 +7,9 @@ import { useForm } from "react-hook-form";
 import {
   User,
   Lock,
-  Bell,
-  Camera,
   Mail,
   Phone,
-  MapPin,
   Calendar,
-  Briefcase,
   Building2,
   Save,
   Eye,
@@ -21,7 +17,10 @@ import {
   Shield,
 } from "lucide-react";
 // import { updateProfile, changePassword } from "../../features/auth/authSlice";
-import { getCurrentUser } from "../../features/auth/authSlice";
+import {
+  changePassword,
+  updateProfile,
+} from "../../features/auth/authSlice";
 import useAuth from "../../hooks/useAuth";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -31,13 +30,12 @@ import { formatDate, getInitials } from "../../utils/helpers";
 const roleColors = {
   admin: "from-violet-500 to-indigo-600",
   hr: "from-blue-500 to-cyan-600",
-  manager: "from-emerald-500 to-teal-600",
   employee: "from-orange-500 to-amber-600",
 };
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(
     searchParams.get("tab") || "profile",
@@ -65,12 +63,13 @@ const Profile = () => {
         user?.emergencyContact?.relationship || "",
     },
   });
+  const { reset: resetProfile } = profileForm;
 
   const pwdForm = useForm();
 
   useEffect(() => {
     if (user) {
-      profileForm.reset({
+      resetProfile({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         phone: user.phone || "",
@@ -86,7 +85,7 @@ const Profile = () => {
           user.emergencyContact?.relationship || "",
       });
     }
-  }, [user]);
+  }, [user, resetProfile]);
 
   const onSaveProfile = async (data) => {
     const payload = {
@@ -119,6 +118,10 @@ const Profile = () => {
   };
 
   const onChangePassword = async (data) => {
+    if (data.newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
     if (data.newPassword !== data.confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -357,7 +360,7 @@ const Profile = () => {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" loading={loading}>
+                <Button type="submit" loading={profileForm.formState.isSubmitting}>
                   <Save className="w-4 h-4" /> Save Profile
                 </Button>
               </div>

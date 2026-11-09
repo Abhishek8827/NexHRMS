@@ -11,14 +11,6 @@ export const getComplaints = asyncHandler(async (req, res) => {
 
   if (req.user.role === 'employee') {
     filter.raisedBy = req.user._id;
-  } else if (req.user.role === 'manager') {
-    const team = await User.find({
-      manager: req.user._id,
-      status: 'active',
-    }).select('_id');
-    const teamIds = team.map(t => t._id);
-    teamIds.push(req.user._id);
-    filter.raisedBy = { $in: teamIds };
   }
   // admin and hr: no filter
 

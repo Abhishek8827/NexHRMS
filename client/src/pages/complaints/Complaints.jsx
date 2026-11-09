@@ -37,7 +37,7 @@ const statusColor = {
 
 const Complaints = () => {
   const dispatch = useDispatch();
-  const { isAdminOrHR, isManager } = useAuth();
+  const { isAdminOrHR } = useAuth();
   const { list, loading } = useSelector((s) => s.complaints);
 
   const [showModal, setShowModal] = useState(false);
@@ -96,7 +96,7 @@ const Complaints = () => {
     resolved: list.filter((c) => c.status === "resolved").length,
   };
 
-  const canManage = isAdminOrHR || isManager;
+  const canManage = isAdminOrHR;
 
   return (
     <div className="space-y-4 sm:space-y-6">

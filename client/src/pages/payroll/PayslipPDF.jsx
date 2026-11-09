@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Download, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import { formatCurrency } from "../../utils/helpers";
 import { MONTHS } from "../../utils/constants";
 
