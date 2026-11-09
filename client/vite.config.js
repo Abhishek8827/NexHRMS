@@ -5,11 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5200,
+    strictPort: true,
     allowedHosts: ['.e2b.app'],
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5201',
         changeOrigin: true,
       },
     },

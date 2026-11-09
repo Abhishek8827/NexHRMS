@@ -379,19 +379,19 @@ npm run dev
 Backend:
 
 ```text
-http://localhost:5000
+http://localhost:5201
 ```
 
 Health check:
 
 ```text
-http://localhost:5000/health
+http://localhost:5201/health
 ```
 
 API:
 
 ```text
-http://localhost:5000/api/v1
+http://localhost:5201/api/v1
 ```
 
 ## Terminal 2 — Frontend
@@ -404,7 +404,7 @@ npm run dev
 Frontend:
 
 ```text
-http://localhost:5173
+http://localhost:5200
 ```
 
 Open the frontend URL in your browser.
