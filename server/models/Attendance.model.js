@@ -19,6 +19,13 @@ const AttendanceSchema = new Schema({
   remarks: { type: String, default: '' },
   isManualEntry: { type: Boolean, default: false },
   markedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  policySnapshot: {
+    shiftName: { type: String, default: '' },
+    standardHours: { type: Number, default: null },
+    gracePeriodMinutes: { type: Number, default: null },
+    halfDayThresholdPercent: { type: Number, default: 50 },
+    lateMarkingEnabled: { type: Boolean, default: true },
+  },
 }, { timestamps: true });
 
 AttendanceSchema.index({ employee: 1, date: 1 }, { unique: true });

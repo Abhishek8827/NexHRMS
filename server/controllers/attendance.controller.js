@@ -6,6 +6,10 @@ import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import dayjs from 'dayjs';
+import {
+  getHalfDayThresholdMinutes,
+  getLateComingConversion,
+} from '../utils/attendancePolicy.js';
 
 // Helper: get the active schedule for an employee
 const getScheduleForEmployee = async (employeeId) => {
@@ -24,8 +28,11 @@ const getScheduleForEmployee = async (employeeId) => {
 
   // Absolute fallback — built-in defaults
   return schedule || {
+    shiftName: 'General Shift',
     punchInTime: { hour: 9, minute: 0 },
     gracePeriodMinutes: 15,
+    lateMarkingEnabled: true,
+    halfDayThresholdPercent: 50,
     punchOutTime: { hour: 18, minute: 0 },
     standardHours: 8,
     workingDays: [1, 2, 3, 4, 5],
@@ -51,9 +58,12 @@ export const punchIn = asyncHandler(async (req, res) => {
     .minute(schedule.punchInTime.minute)
     .second(0);
 
-  const lateThreshold = scheduledStart.add(schedule.gracePeriodMinutes || 15, 'minute');
+  const gracePeriodMinutes = schedule.gracePeriodMinutes ?? 15;
+  const halfDayThresholdPercent = schedule.halfDayThresholdPercent ?? 50;
+  const lateMarkingEnabled = schedule.lateMarkingEnabled ?? true;
+  const lateThreshold = scheduledStart.add(gracePeriodMinutes, 'minute');
   const currentTime = dayjs(now);
-  const isLate = currentTime.isAfter(lateThreshold);
+  const isLate = lateMarkingEnabled && currentTime.isAfter(lateThreshold);
   const lateByMinutes = isLate ? currentTime.diff(scheduledStart, 'minute') : 0;
 
   const attendance = await Attendance.findOneAndUpdate(
@@ -69,6 +79,13 @@ export const punchIn = asyncHandler(async (req, res) => {
         status: isLate ? 'late' : 'present',
         isLate,
         lateByMinutes,
+        policySnapshot: {
+          shiftName: schedule.shiftName || 'General Shift',
+          standardHours: schedule.standardHours ?? 8,
+          gracePeriodMinutes,
+          halfDayThresholdPercent,
+          lateMarkingEnabled,
+        },
         workMode: req.body.workMode || 'office',
       },
     },
@@ -98,15 +115,25 @@ export const punchOut = asyncHandler(async (req, res) => {
   if (attendance.punchOut) throw new ApiError(400, 'Already punched out today');
 
   const schedule = await getScheduleForEmployee(employeeId);
-  const standardMinutes = (schedule.standardHours || 8) * 60;
+  const standardHours = attendance.policySnapshot?.standardHours
+    ?? schedule.standardHours
+    ?? 8;
+  const halfDayThresholdPercent = attendance.policySnapshot?.halfDayThresholdPercent
+    ?? schedule.halfDayThresholdPercent
+    ?? 50;
+  const standardMinutes = standardHours * 60;
+  const halfDayThresholdMinutes = getHalfDayThresholdMinutes({
+    standardHours,
+    thresholdPercent: halfDayThresholdPercent,
+  });
 
   const workingMinutes = dayjs(now).diff(dayjs(attendance.punchIn), 'minute');
   const overtimeMinutes = Math.max(0, workingMinutes - standardMinutes);
 
-  // Determine final status
-  let status = attendance.status; // keep 'late' or 'present'
-  if (workingMinutes < standardMinutes / 2) {
-    status = 'half-day'; // worked less than 4 hours
+  // Use the policy saved at punch-in so later schedule edits do not change today's result.
+  let status = attendance.status;
+  if (workingMinutes < halfDayThresholdMinutes) {
+    status = 'half-day';
   }
 
   const updated = await Attendance.findOneAndUpdate(
@@ -158,11 +185,14 @@ export const getMyAttendance = asyncHandler(async (req, res) => {
     date: { $gte: startDate, $lte: endDate },
   }).sort({ date: 1 });
 
+  const lateComings = records.filter((record) => record.isLate || record.status === 'late').length;
+  const lateComingConversion = getLateComingConversion(lateComings);
   const summary = {
-    // FIXED: late + present both count as "attended"
+    // Late is tracked separately while also counting as an attended day.
     present: records.filter(r => ['present', 'late'].includes(r.status)).length,
     absent: records.filter(r => r.status === 'absent').length,
-    late: records.filter(r => r.status === 'late').length,
+    late: lateComings,
+    lateComingConversion,
     halfDay: records.filter(r => r.status === 'half-day').length,
     onLeave: records.filter(r => r.status === 'on-leave').length,
     totalWorkingMinutes: records.reduce((s, r) => s + (r.workingMinutes || 0), 0),

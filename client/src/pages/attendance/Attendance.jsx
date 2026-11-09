@@ -164,7 +164,7 @@ const Attendance = () => {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {[
           {
             label: "Present",
@@ -190,6 +190,14 @@ const Attendance = () => {
             color:
               "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400",
           },
+          {
+            label: "LC Conversion (reference)",
+            value: summary?.lateComingConversion?.needsPolicyReview
+              ? "Review"
+              : `${summary?.lateComingConversion?.convertedDays ?? 0} day${summary?.lateComingConversion?.convertedDays === 1 ? "" : "s"}`,
+            color:
+              "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400",
+          },
         ].map((s, i) => (
           <motion.div
             key={s.label}
@@ -203,6 +211,9 @@ const Attendance = () => {
           </motion.div>
         ))}
       </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        The monthly LC conversion is shown for reference only. It does not change leave balances or payroll.
+      </p>
 
       {/* Records Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
