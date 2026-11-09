@@ -29,6 +29,7 @@ app.use(
       if (!origin) return callback(null, true);
       const allowed = [
         'http://localhost:5173',
+        'http://localhost:5200',
         'http://localhost:3000',
         'http://localhost:4173',
         process.env.CLIENT_URL,
