@@ -4,6 +4,7 @@ const { Schema, model } = mongoose;
 
 const UserSchema = new Schema({
   employeeId: { type: String, unique: true, sparse: true },
+  attendanceCode: { type: String, unique: true, sparse: true, trim: true },
   firebaseUid: { type: String, unique: true, sparse: true, select: false },
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },

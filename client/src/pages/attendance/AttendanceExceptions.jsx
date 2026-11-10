@@ -7,6 +7,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Spinner from '../../components/common/Spinner';
 import { formatDate, formatTime } from '../../utils/helpers';
+import useAuth from '../../hooks/useAuth';
 
 const getCurrentPeriod = () => {
   const today = new Date();
@@ -14,6 +15,7 @@ const getCurrentPeriod = () => {
 };
 
 const AttendanceExceptions = () => {
+  const { isAdmin } = useAuth();
   const [period, setPeriod] = useState(getCurrentPeriod);
   const [records, setRecords] = useState([]);
   const [showReviewed, setShowReviewed] = useState(false);
@@ -200,12 +202,14 @@ const AttendanceExceptions = () => {
                       </p>
                     ) : (
                       <p className="mt-1 text-xs text-gray-500">
-                        Decide whether this was a half-day or enter the verified punch-out time. A reason is recorded in the review history.
+                        {isAdmin
+                          ? 'Decide whether this was a half-day or enter the verified punch-out time. A reason is recorded in the review history.'
+                          : 'This exception is waiting for an Admin review.'}
                       </p>
                     )}
                   </div>
                 </div>
-                {!showReviewed && (
+                {!showReviewed && isAdmin && (
                   <div className="flex flex-wrap gap-2 sm:shrink-0">
                     <Button variant="secondary" onClick={() => openReview(record, 'confirmed-half-day')}>
                       Confirm half-day

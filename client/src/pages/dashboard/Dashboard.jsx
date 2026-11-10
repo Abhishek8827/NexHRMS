@@ -12,7 +12,6 @@ import {
   UserCheck,
   AlertCircle,
   CheckSquare,
-  Receipt,
   Building2,
   ArrowRight,
   Activity,
@@ -23,7 +22,7 @@ import {
   punchOut,
 } from "../../features/attendance/attendanceSlice";
 import useAuth from "../../hooks/useAuth";
-import { formatTime } from "../../utils/helpers";
+import { formatCurrency, formatTime } from "../../utils/helpers";
 import api from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 
@@ -323,10 +322,10 @@ const HRDashboard = ({ stats }) => {
   const navigate = useNavigate();
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <DashCard
-          title="Total Employees"
-          value={stats?.activeEmployees}
+          title="Active Employees"
+          value={stats?.activeEmployees ?? 0}
           icon={Users}
           color="blue"
           delay={0.05}
@@ -334,171 +333,93 @@ const HRDashboard = ({ stats }) => {
         />
         <DashCard
           title="Present Today"
-          value={stats?.presentToday}
+          value={stats?.presentToday ?? 0}
           icon={UserCheck}
           color="green"
           delay={0.1}
+          onClick={() => navigate("/attendance")}
         />
         <DashCard
-          title="Pending Leaves"
-          value={stats?.pendingLeaves}
-          sub="Needs approval"
-          icon={Calendar}
-          color="yellow"
+          title="Finalized Monthly Payroll"
+          value={formatCurrency(stats?.monthlyPayroll ?? 0)}
+          icon={DollarSign}
+          color="purple"
           delay={0.15}
-          onClick={() => navigate("/leaves")}
-        />
-        <DashCard
-          title="On Leave Today"
-          value={stats?.onLeaveToday}
-          icon={AlertCircle}
-          color="red"
-          delay={0.2}
+          onClick={() => navigate("/payroll")}
         />
       </div>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800"
-      >
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 text-sm sm:text-base">
-          HR Quick Actions
-        </h3>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Read-only views</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
           <QuickBtn
             icon={Users}
-            label="Add Employee"
+            label="Employee directory"
             color="text-blue-600 bg-blue-50 dark:bg-blue-900/20"
-            onClick={() => navigate("/employees/new")}
-          />
-          <QuickBtn
-            icon={Calendar}
-            label="Approvals"
-            color="text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20"
-            onClick={() => navigate("/leaves")}
+            onClick={() => navigate("/employees")}
           />
           <QuickBtn
             icon={Clock}
-            label="Attendance"
+            label="Attendance records"
             color="text-green-600 bg-green-50 dark:bg-green-900/20"
             onClick={() => navigate("/attendance")}
           />
           <QuickBtn
             icon={DollarSign}
-            label="Payroll"
+            label="Finalized salary reports"
             color="text-purple-600 bg-purple-50 dark:bg-purple-900/20"
             onClick={() => navigate("/payroll")}
           />
-          <QuickBtn
-            icon={Receipt}
-            label="Reimbursements"
-            color="text-orange-600 bg-orange-50 dark:bg-orange-900/20"
-            onClick={() => navigate("/reimbursements")}
-          />
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
 
-const EmployeeDashboard = ({ today, punchLoading, onPunchIn, onPunchOut }) => {
+const EmployeeDashboard = ({ user, today }) => {
   const navigate = useNavigate();
-  const [leaveBalance, setLeaveBalance] = useState(null);
-  useEffect(() => {
-    api
-      .get("/leaves/balance")
-      .then((res) => setLeaveBalance(res.data.data))
-      .catch(() => {});
-  }, []);
+  const attendance = today?.attendance;
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PunchCard
-        today={today}
-        loading={punchLoading}
-        onPunchIn={onPunchIn}
-        onPunchOut={onPunchOut}
-      />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <DashCard
-          title="Casual Leave"
-          value={
-            leaveBalance
-              ? `${leaveBalance.casual?.remaining ?? 0}/${leaveBalance.casual?.entitled ?? 12}`
-              : "—"
-          }
-          sub="Days remaining"
-          icon={Calendar}
-          color="blue"
-          delay={0.1}
-        />
-        <DashCard
-          title="Sick Leave"
-          value={
-            leaveBalance
-              ? `${leaveBalance.sick?.remaining ?? 0}/${leaveBalance.sick?.entitled ?? 12}`
-              : "—"
-          }
-          sub="Days remaining"
-          icon={Activity}
-          color="green"
-          delay={0.15}
-        />
-        <DashCard
-          title="My Tasks"
-          value="—"
-          sub="Assigned"
-          icon={CheckSquare}
-          color="yellow"
-          delay={0.2}
-          onClick={() => navigate("/tasks")}
-        />
-        <DashCard
-          title="Reimbursements"
-          value="—"
-          sub="Pending"
-          icon={Receipt}
-          color="purple"
-          delay={0.25}
-          onClick={() => navigate("/reimbursements")}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">My employee ID</p>
+          <p className="mt-2 font-mono text-xl font-semibold text-gray-900 dark:text-white">
+            {user?.employeeId || "—"}
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            {user?.department?.name || "Department not assigned"}
+            {user?.designation ? ` · ${user.designation}` : ""}
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Today’s attendance</p>
+          <p className="mt-2 text-xl font-semibold capitalize text-gray-900 dark:text-white">
+            {attendance?.status || "No attendance record yet"}
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            {attendance?.punchIn ? `In ${formatTime(attendance.punchIn)}` : ""}
+            {attendance?.punchOut ? ` · Out ${formatTime(attendance.punchOut)}` : ""}
+          </p>
+        </div>
       </div>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.35 }}
-        className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800"
-      >
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">My records</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <QuickBtn
-            icon={Calendar}
-            label="Apply Leave"
+            icon={Clock}
+            label="Attendance history"
             color="text-blue-600 bg-blue-50 dark:bg-blue-900/20"
-            onClick={() => navigate("/leaves")}
+            onClick={() => navigate("/attendance")}
           />
           <QuickBtn
             icon={DollarSign}
-            label="My Payslips"
+            label="Finalized salary reports"
             color="text-green-600 bg-green-50 dark:bg-green-900/20"
             onClick={() => navigate("/payroll")}
           />
-          <QuickBtn
-            icon={Receipt}
-            label="Reimbursement"
-            color="text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20"
-            onClick={() => navigate("/reimbursements")}
-          />
-          <QuickBtn
-            icon={AlertCircle}
-            label="Raise Complaint"
-            color="text-red-600 bg-red-50 dark:bg-red-900/20"
-            onClick={() => navigate("/complaints")}
-          />
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
@@ -578,7 +499,7 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {(isAdmin || isHR) && (
+      {isAdmin && (
         <PunchCard
           today={today}
           loading={punchLoading}
@@ -589,12 +510,7 @@ const Dashboard = () => {
       {isAdmin && <AdminDashboard stats={stats} />}
       {isHR && <HRDashboard stats={stats} />}
       {user?.role === "employee" && (
-        <EmployeeDashboard
-          today={today}
-          punchLoading={punchLoading}
-          onPunchIn={handlePunchIn}
-          onPunchOut={handlePunchOut}
-        />
+        <EmployeeDashboard user={user} today={today} />
       )}
     </div>
   );

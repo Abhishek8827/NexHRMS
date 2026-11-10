@@ -16,6 +16,7 @@ export const registerEmployee = asyncHandler(async (req, res) => {
     designation,
     joiningDate,
     phone,
+    attendanceCode,
     basicSalary = 0,
   } = req.body;
 
@@ -49,6 +50,13 @@ export const registerEmployee = asyncHandler(async (req, res) => {
     throw new ApiError(409, 'An employee with this email already exists');
   }
 
+  const normalizedAttendanceCode = typeof attendanceCode === 'string'
+    ? attendanceCode.trim()
+    : '';
+  if (normalizedAttendanceCode && await User.exists({ attendanceCode: normalizedAttendanceCode })) {
+    throw new ApiError(409, 'This attendance system employee code is already assigned');
+  }
+
   const firebaseAuth = getFirebaseAuth();
   let identity;
 
@@ -70,6 +78,7 @@ export const registerEmployee = asyncHandler(async (req, res) => {
     const employee = await User.create({
       firebaseUid: identity.uid,
       employeeId: await generateEmployeeId(),
+      attendanceCode: normalizedAttendanceCode || undefined,
       firstName,
       lastName,
       email: normalizedEmail,

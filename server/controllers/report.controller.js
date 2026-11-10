@@ -8,6 +8,9 @@ import dayjs from 'dayjs';
 
 export const getDashboardStats = asyncHandler(async (req, res) => {
   const today = dayjs().startOf('day').toDate();
+  const payrollStatusFilter = req.user.role === 'hr'
+    ? { finalizedAt: { $ne: null } }
+    : { status: { $in: ['processed', 'paid'] } };
 
   const [
     totalEmployees,
@@ -29,7 +32,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
         $match: {
           month: dayjs().month() + 1,
           year: dayjs().year(),
-          status: { $in: ['processed', 'paid'] },
+          ...payrollStatusFilter,
         },
       },
       { $group: { _id: null, total: { $sum: '$netSalary' } } },
@@ -44,20 +47,23 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
   // absentToday = active employees who didn't attend and aren't on leave
   const absentToday = activeEmployees - presentToday - onLeaveToday;
 
+  const dashboardStats = {
+    totalEmployees,
+    activeEmployees,
+    presentToday,
+    monthlyPayroll: thisMonthPayroll[0]?.total || 0,
+  };
+
+  if (req.user.role === 'admin') {
+    Object.assign(dashboardStats, {
+      absentToday: Math.max(0, absentToday),
+      onLeaveToday,
+      pendingLeaves,
+    });
+  }
+
   return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        totalEmployees,
-        activeEmployees,
-        presentToday,
-        absentToday: Math.max(0, absentToday),
-        onLeaveToday,
-        pendingLeaves,
-        monthlyPayroll: thisMonthPayroll[0]?.total || 0,
-      },
-      'Dashboard stats fetched'
-    )
+    new ApiResponse(200, dashboardStats, 'Dashboard stats fetched')
   );
 });
 

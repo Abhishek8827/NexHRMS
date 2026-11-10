@@ -16,8 +16,8 @@ const useAuth = () => {
     isHR,
     isEmployee,
     isAdminOrHR,
-    canManageEmployees: isAdmin || isHR,
-    canApproveLeaves: isAdmin || isHR,
+    canManageEmployees: isAdmin,
+    canApproveLeaves: isAdmin,
   };
 };
 

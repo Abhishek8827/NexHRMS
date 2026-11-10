@@ -12,6 +12,12 @@ export const formatDateTime = (date) => {
 
 export const formatTime = (date) => {
   if (!date) return '—';
+  if (typeof date === 'string' && /^\d{1,2}:\d{2}$/.test(date)) {
+    const [hours, minutes] = date.split(':').map(Number);
+    const localTime = new Date();
+    localTime.setHours(hours, minutes, 0, 0);
+    return format(localTime, 'hh:mm a');
+  }
   return format(new Date(date), 'hh:mm a');
 };
 

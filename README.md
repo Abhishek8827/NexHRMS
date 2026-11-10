@@ -363,6 +363,20 @@ Copy `server/.env.example` to `server/.env` and `client/.env.example` to `client
 
 Never commit real `.env` files, service-account JSON, or production credentials.
 
+### Seed local demo logins
+
+The optional `npm run seed:demo` script creates one synthetic HR account and four synthetic Employee accounts in Firebase Authentication and MongoDB. It is blocked in production and requires `ALLOW_DEMO_SEED=true`. Run it only against a development Firebase project and development database.
+
+In PowerShell, from the `server` directory:
+
+```powershell
+$env:ALLOW_DEMO_SEED = "true"
+npm run seed:demo
+Remove-Item Env:ALLOW_DEMO_SEED
+```
+
+The script prints the generated email/password pairs once. Save them securely; it does not write passwords to source files. The demo emails use `example.com`, and existing accounts are never reset or have their passwords displayed. Do not deploy or reuse these demo credentials in production.
+
 ---
 
 # Start the Application

@@ -35,7 +35,7 @@ const roleColors = {
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(
     searchParams.get("tab") || "profile",
@@ -255,6 +255,12 @@ const Profile = () => {
               onSubmit={profileForm.handleSubmit(onSaveProfile)}
               className="space-y-6"
             >
+              {!isAdmin && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Profile details are read-only. Contact an Admin if a correction is needed.
+                </p>
+              )}
+              <fieldset disabled={!isAdmin} className="space-y-6">
               {/* Personal info */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
@@ -359,11 +365,14 @@ const Profile = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <Button type="submit" loading={profileForm.formState.isSubmitting}>
-                  <Save className="w-4 h-4" /> Save Profile
-                </Button>
-              </div>
+              {isAdmin && (
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" loading={profileForm.formState.isSubmitting}>
+                    <Save className="w-4 h-4" /> Save Profile
+                  </Button>
+                </div>
+              )}
+              </fieldset>
             </form>
           )}
 

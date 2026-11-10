@@ -12,7 +12,7 @@ const router = Router();
 
 // All routes require login
 // router.use(verifyJWT);
-router.use(protect);
+router.use(protect, authorize('admin'));
 
 // ── Public to all roles ────────────────────────────────────
 router.get("/", getCompany);
