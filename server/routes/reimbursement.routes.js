@@ -8,7 +8,7 @@ import {
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
-router.use(protect);
+router.use(protect, authorize('admin'));
 
 router.get('/my', getMyReimbursements);
 

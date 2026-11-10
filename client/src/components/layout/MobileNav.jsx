@@ -20,10 +20,12 @@ import {
   X,
   Building2,
   Menu,
+  FileText,
 } from "lucide-react";
 import { logoutUser } from "../../features/auth/authSlice";
 import useAuth from "../../hooks/useAuth";
 import { getInitials } from "../../utils/helpers";
+import { FEATURE_ACCESS } from "../../utils/featureAccess";
 
 // Bottom tab items (most used — always visible)
 const bottomTabs = [
@@ -35,84 +37,20 @@ const bottomTabs = [
 
 // All nav items for the full drawer
 const allNavItems = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/dashboard",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Employees",
-    icon: Users,
-    path: "/employees",
-    roles: ["admin", "hr"],
-  },
-  {
-    label: "Attendance",
-    icon: Clock,
-    path: "/attendance",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Leaves",
-    icon: Calendar,
-    path: "/leaves",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Payroll",
-    icon: DollarSign,
-    path: "/payroll",
-    roles: ["admin", "hr"],
-  },
-  {
-    label: "Recruitment",
-    icon: Briefcase,
-    path: "/recruitment",
-    roles: ["admin", "hr"],
-  },
-  {
-    label: "Tasks",
-    icon: CheckSquare,
-    path: "/tasks",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Performance",
-    icon: Star,
-    path: "/performance",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Reimbursements",
-    icon: Receipt,
-    path: "/reimbursements",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Complaints",
-    icon: MessageSquare,
-    path: "/complaints",
-    roles: ["admin", "hr", "employee"],
-  },
-  {
-    label: "Reports",
-    icon: BarChart2,
-    path: "/reports",
-    roles: ["admin", "hr"],
-  },
-  {
-    label: "Company",
-    icon: Building2,
-    path: "/company",
-    roles: ["admin", "hr"],
-  },
-  {
-    label: "Work Schedules",
-    icon: Settings,
-    path: "/settings/schedules",
-    roles: ["admin", "hr"],
-  },
+  { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", roles: FEATURE_ACCESS.dashboard },
+  { label: "Employees", icon: Users, path: "/employees", roles: FEATURE_ACCESS.employeeDirectory },
+  { label: "Attendance", icon: Clock, path: "/attendance", roles: FEATURE_ACCESS.attendance },
+  { label: "Monthly PDF Import", icon: FileText, path: "/attendance/imports", roles: FEATURE_ACCESS.attendanceImport },
+  { label: "Leaves", icon: Calendar, path: "/leaves", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Payroll", icon: DollarSign, path: "/payroll", roles: FEATURE_ACCESS.payroll },
+  { label: "Recruitment", icon: Briefcase, path: "/recruitment", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Tasks", icon: CheckSquare, path: "/tasks", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Performance", icon: Star, path: "/performance", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Reimbursements", icon: Receipt, path: "/reimbursements", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Complaints", icon: MessageSquare, path: "/complaints", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Reports", icon: BarChart2, path: "/reports", roles: FEATURE_ACCESS.reports },
+  { label: "Company", icon: Building2, path: "/company", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Work Schedules", icon: Settings, path: "/settings/schedules", roles: FEATURE_ACCESS.adminOperations },
 ];
 
 const roleColors = {

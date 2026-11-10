@@ -33,7 +33,7 @@ import {
 const STATUS_OPTIONS = ["all", "active", "inactive", "terminated"];
 const ROLE_OPTIONS = ["all", "admin", "hr", "employee"];
 
-const EmployeeCard = ({ emp, isAdminOrHR, onEdit, onDeactivate }) => (
+const EmployeeCard = ({ emp, isAdmin, onView, onEdit, onDeactivate }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -41,9 +41,13 @@ const EmployeeCard = ({ emp, isAdminOrHR, onEdit, onDeactivate }) => (
           {getInitials(emp.firstName, emp.lastName)}
         </div>
         <div>
-          <p className="font-semibold text-gray-900 dark:text-white text-sm">
+          <button
+            type="button"
+            onClick={() => onView(emp._id)}
+            className="text-left font-semibold text-gray-900 hover:text-primary-600 dark:text-white text-sm"
+          >
             {emp.firstName} {emp.lastName}
-          </p>
+          </button>
           <p className="text-xs text-gray-500 truncate max-w-[160px]">
             {emp.email}
           </p>
@@ -99,7 +103,7 @@ const EmployeeCard = ({ emp, isAdminOrHR, onEdit, onDeactivate }) => (
         </p>
       </div>
     </div>
-    {isAdminOrHR && (
+    {isAdmin && (
       <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         <button
           onClick={() => onEdit(emp._id)}
@@ -123,7 +127,7 @@ const EmployeeCard = ({ emp, isAdminOrHR, onEdit, onDeactivate }) => (
 const EmployeeList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAdminOrHR } = useAuth();
+  const { isAdmin } = useAuth();
   const { list, pagination, departments, loading } = useSelector(
     (s) => s.employees,
   );
@@ -205,7 +209,7 @@ const EmployeeList = () => {
             {pagination?.totalCount ?? 0} total employees
           </p>
         </div>
-        {isAdminOrHR && (
+        {isAdmin && (
           <Button onClick={() => navigate("/employees/new")} size="sm">
             <Plus className="w-4 h-4" />{" "}
             <span className="hidden sm:inline">Add Employee</span>
@@ -339,7 +343,8 @@ const EmployeeList = () => {
                 <EmployeeCard
                   key={emp._id}
                   emp={emp}
-                  isAdminOrHR={isAdminOrHR}
+                  isAdmin={isAdmin}
+                  onView={(id) => navigate(`/employees/${id}`)}
                   onEdit={(id) => navigate(`/employees/${id}/edit`)}
                   onDeactivate={(emp) =>
                     setConfirmModal({ open: true, employee: emp })
@@ -389,9 +394,13 @@ const EmployeeList = () => {
                             {getInitials(emp.firstName, emp.lastName)}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/employees/${emp._id}`)}
+                              className="text-left text-sm font-medium text-gray-900 hover:text-primary-600 dark:text-white"
+                            >
                               {emp.firstName} {emp.lastName}
-                            </p>
+                            </button>
                             <p className="text-xs text-gray-500 hidden lg:block truncate max-w-[160px]">
                               {emp.email}
                             </p>
@@ -431,7 +440,7 @@ const EmployeeList = () => {
                         </Badge>
                       </td>
                       <td className="px-4 lg:px-6 py-3 lg:py-4">
-                        {isAdminOrHR && (
+                        {isAdmin && (
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() =>

@@ -3,7 +3,7 @@ import { getComplaints, createComplaint, updateComplaintStatus } from '../contro
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
-router.use(protect);
+router.use(protect, authorize('admin'));
 
 router.get('/', getComplaints);
 router.post('/', createComplaint);

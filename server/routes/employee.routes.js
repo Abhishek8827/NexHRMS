@@ -9,10 +9,10 @@ const router = Router();
 
 router.use(protect);
 
-router.put('/me', updateOwnProfile);
+router.put('/me', authorize('admin'), updateOwnProfile);
 router.get('/', authorize('admin', 'hr'), getAllEmployees);
 router.get('/:id', getEmployeeById);
-router.put('/:id', authorize('admin', 'hr'), updateEmployee);
+router.put('/:id', authorize('admin'), updateEmployee);
 router.delete('/:id', authorize('admin'), deactivateEmployee);
 
 export default router;

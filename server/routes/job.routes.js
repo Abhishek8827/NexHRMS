@@ -6,7 +6,7 @@ import {
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
-router.use(protect);
+router.use(protect, authorize('admin'));
 
 // IMPORTANT: specific routes MUST come before parameterized routes
 // /candidates/:id/stage must be defined BEFORE /:id

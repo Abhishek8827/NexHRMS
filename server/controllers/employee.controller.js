@@ -81,6 +81,13 @@ export const updateOwnProfile = asyncHandler(async (req, res) => {
 });
 
 export const getEmployeeById = asyncHandler(async (req, res) => {
+  if (
+    req.user.role === 'employee' &&
+    req.user._id.toString() !== req.params.id
+  ) {
+    throw new ApiError(403, 'You can only view your own profile');
+  }
+
   const employee = await User.findById(req.params.id)
     .select('-password -refreshToken')
     .populate('department', 'name code')
@@ -105,7 +112,7 @@ export const updateEmployee = asyncHandler(async (req, res) => {
     'firstName', 'lastName', 'phone', 'designation',
     'department', 'manager', 'joiningDate', 'dateOfBirth',
     'gender', 'address', 'emergencyContact', 'bankDetails',
-    'basicSalary',
+    'basicSalary', 'attendanceCode',
   ];
 
   if (req.user.role === 'admin') {
@@ -125,6 +132,17 @@ export const updateEmployee = asyncHandler(async (req, res) => {
       delete updateData[key];
     }
   });
+
+  if (typeof updateData.attendanceCode === 'string') {
+    updateData.attendanceCode = updateData.attendanceCode.trim();
+    const existingCode = await User.findOne({
+      attendanceCode: updateData.attendanceCode,
+      _id: { $ne: req.params.id },
+    });
+    if (existingCode) {
+      throw new ApiError(409, 'This attendance system employee code is already assigned');
+    }
+  }
 
   const employee = await User.findByIdAndUpdate(
     req.params.id,

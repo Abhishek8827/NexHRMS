@@ -139,7 +139,10 @@ export const processPayroll = asyncHandler(async (req, res) => {
 
 // GET /api/v1/payroll/my — Employee sees own payslips
 export const getMyPayroll = asyncHandler(async (req, res) => {
-  const payrolls = await Payroll.find({ employee: req.user._id })
+  const payrolls = await Payroll.find({
+    employee: req.user._id,
+    finalizedAt: { $ne: null },
+  })
     .sort({ year: -1, month: -1 });
 
   return res.status(200).json(
@@ -154,6 +157,7 @@ export const getAllPayroll = asyncHandler(async (req, res) => {
   if (month) filter.month = parseInt(month);
   if (year) filter.year = parseInt(year);
   if (status) filter.status = status;
+  if (req.user.role === 'hr') filter.finalizedAt = { $ne: null };
 
   const payrolls = await Payroll.find(filter)
     .populate('employee', 'firstName lastName employeeId department designation')

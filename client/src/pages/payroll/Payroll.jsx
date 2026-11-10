@@ -29,7 +29,7 @@ const statusColor = { draft: "gray", processed: "blue", paid: "green" };
 
 const Payroll = () => {
   const dispatch = useDispatch();
-  const { isAdminOrHR } = useAuth();
+  const { isAdmin, isEmployee, isAdminOrHR } = useAuth();
   const { allRecords, myPayslips, loading, processing } = useSelector(
     (s) => s.payroll,
   );
@@ -109,9 +109,9 @@ const Payroll = () => {
   const paidCount = allRecords.filter((r) => r.status === "paid").length;
 
   const tabs = [
-    ...(isAdminOrHR ? [{ id: "records", label: "All Records" }] : []),
-    { id: "my-payslips", label: "My Payslips" },
-    { id: "ctc", label: "CTC Calc" },
+    ...(isAdminOrHR ? [{ id: "records", label: isAdmin ? "Payroll Records" : "Finalized Reports" }] : []),
+    ...((isAdmin || isEmployee) ? [{ id: "my-payslips", label: "My Payslips" }] : []),
+    ...(isAdmin ? [{ id: "ctc", label: "CTC Calc" }] : []),
   ];
 
   return (
@@ -126,7 +126,7 @@ const Payroll = () => {
             Manage salaries, payslips and compensation
           </p>
         </div>
-        {isAdminOrHR && (
+        {isAdmin && (
           <Button onClick={() => setProcessModal(true)} size="sm">
             <DollarSign className="w-4 h-4" />{" "}
             <span className="hidden sm:inline">Process Payroll</span>
@@ -146,7 +146,7 @@ const Payroll = () => {
               color: "text-green-600 bg-green-50 dark:bg-green-900/20",
             },
             {
-              label: "Processed",
+              label: "Finalized",
               value: `${processedCount} employees`,
               icon: CheckCircle,
               color: "text-blue-600 bg-blue-50 dark:bg-blue-900/20",
@@ -359,7 +359,7 @@ const Payroll = () => {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {r.status === "processed" && (
+                              {isAdmin && r.status === "processed" && (
                                 <button
                                   onClick={() => handleMarkPaid(r._id)}
                                   className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium"
@@ -458,7 +458,7 @@ const Payroll = () => {
         )}
 
         {/* CTC Calculator */}
-        {activeTab === "ctc" && (
+        {activeTab === "ctc" && isAdmin && (
           <div className="p-4 sm:p-6 space-y-5">
             <div className="max-w-sm">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
