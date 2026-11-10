@@ -23,6 +23,8 @@ import {
 } from "../../utils/helpers";
 import { MONTHS } from "../../utils/constants";
 import { toast } from "react-hot-toast";
+import useAuth from "../../hooks/useAuth";
+import AttendanceExceptions from "./AttendanceExceptions";
 
 const statusColor = {
   present: "green",
@@ -35,6 +37,8 @@ const statusColor = {
 
 const Attendance = () => {
   const dispatch = useDispatch();
+  const { isAdminOrHR } = useAuth();
+  const [showExceptions, setShowExceptions] = useState(false);
   const { records, summary, today, loading, punchLoading } = useSelector(
     (s) => s.attendance,
   );
@@ -76,15 +80,41 @@ const Attendance = () => {
   const isCurrentMonth =
     month === now.getMonth() + 1 && year === now.getFullYear();
 
+  if (isAdminOrHR && showExceptions) {
+    return (
+      <div className="space-y-5">
+        <button
+          type="button"
+          onClick={() => setShowExceptions(false)}
+          className="text-sm font-medium text-primary-600 hover:text-primary-700"
+        >
+          ← Back to my attendance
+        </button>
+        <AttendanceExceptions />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-          My Attendance
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Track your attendance and working hours
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            My Attendance
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Track your attendance and working hours
+          </p>
+        </div>
+        {isAdminOrHR && (
+          <button
+            type="button"
+            onClick={() => setShowExceptions(true)}
+            className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/20"
+          >
+            Review punch exceptions
+          </button>
+        )}
       </div>
 
       {/* Today Punch Card */}

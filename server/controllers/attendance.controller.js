@@ -79,6 +79,7 @@ export const punchIn = asyncHandler(async (req, res) => {
         status: isLate ? 'late' : 'present',
         isLate,
         lateByMinutes,
+        punchReviewStatus: 'pending',
         policySnapshot: {
           shiftName: schedule.shiftName || 'General Shift',
           standardHours: schedule.standardHours ?? 8,
@@ -138,7 +139,15 @@ export const punchOut = asyncHandler(async (req, res) => {
 
   const updated = await Attendance.findOneAndUpdate(
     { employee: employeeId, date: today },
-    { $set: { punchOut: now, workingMinutes, overtimeMinutes, status } },
+    {
+      $set: {
+        punchOut: now,
+        workingMinutes,
+        overtimeMinutes,
+        status,
+        punchReviewStatus: 'not-required',
+      },
+    },
     { new: true }
   );
 
@@ -250,6 +259,138 @@ export const manualMark = asyncHandler(async (req, res) => {
 
   return res.status(200).json(
     new ApiResponse(200, attendance, 'Attendance marked successfully')
+  );
+});
+
+// GET /api/v1/attendance/exceptions
+// Past open punches are reviewed by Admin/HR; today's active shift is excluded.
+export const getPunchExceptions = asyncHandler(async (req, res) => {
+  const currentMonth = dayjs().month() + 1;
+  const currentYear = dayjs().year();
+  const month = req.query.month === undefined ? currentMonth : Number(req.query.month);
+  const year = req.query.year === undefined ? currentYear : Number(req.query.year);
+
+  if (!Number.isInteger(month) || month < 1 || month > 12
+    || !Number.isInteger(year) || year < 2000 || year > 2100) {
+    throw new ApiError(400, 'Provide a valid month and year');
+  }
+
+  const startDate = dayjs(`${year}-${month}-01`).startOf('month');
+  const endOfMonth = startDate.endOf('month');
+  const lastCompletedDay = dayjs().startOf('day').subtract(1, 'millisecond');
+  const endDate = endOfMonth.isAfter(lastCompletedDay) ? lastCompletedDay : endOfMonth;
+
+  if (endDate.isBefore(startDate)) {
+    return res.status(200).json(
+      new ApiResponse(200, [], 'No completed days in this period'),
+    );
+  }
+
+  const dateFilter = { $gte: startDate.toDate(), $lte: endDate.toDate() };
+  const filter = req.query.includeResolved === 'true'
+    ? {
+      date: dateFilter,
+      punchReviewStatus: 'resolved',
+      'punchReviewHistory.0': { $exists: true },
+    }
+    : {
+      punchIn: { $ne: null },
+      punchOut: null,
+      punchReviewStatus: { $ne: 'resolved' },
+      date: dateFilter,
+    };
+
+  const records = await Attendance.find(filter)
+    .populate('employee', 'firstName lastName employeeId department designation')
+    .populate('punchReviewHistory.reviewedBy', 'firstName lastName')
+    .sort({ date: -1, punchIn: -1 });
+
+  return res.status(200).json(
+    new ApiResponse(200, records, 'Punch exceptions fetched'),
+  );
+});
+
+// PATCH /api/v1/attendance/:id/review
+export const reviewPunchException = asyncHandler(async (req, res) => {
+  const { action, punchOut: requestedPunchOut, reason } = req.body;
+  const reviewReason = typeof reason === 'string' ? reason.trim() : '';
+
+  if (!['confirmed-half-day', 'corrected-punch-out'].includes(action)) {
+    throw new ApiError(400, 'Choose a valid punch review action');
+  }
+  if (reviewReason.length < 5) {
+    throw new ApiError(400, 'Enter a review reason of at least 5 characters');
+  }
+
+  const attendance = await Attendance.findById(req.params.id);
+  if (!attendance) throw new ApiError(404, 'Attendance record not found');
+  if (!attendance.punchIn || attendance.punchOut) {
+    throw new ApiError(409, 'This attendance record is no longer an open punch');
+  }
+  if (attendance.punchReviewStatus === 'resolved') {
+    throw new ApiError(409, 'This punch exception has already been reviewed');
+  }
+
+  const previous = {
+    punchOut: attendance.punchOut,
+    status: attendance.status,
+    workingMinutes: attendance.workingMinutes,
+  };
+  let updatedPunchOut = null;
+  let updatedStatus = 'half-day';
+  let updatedWorkingMinutes = attendance.workingMinutes || 0;
+
+  if (action === 'corrected-punch-out') {
+    updatedPunchOut = new Date(requestedPunchOut);
+    if (!requestedPunchOut || Number.isNaN(updatedPunchOut.getTime())) {
+      throw new ApiError(400, 'Provide a valid corrected punch-out time');
+    }
+    if (updatedPunchOut < attendance.punchIn || updatedPunchOut > new Date()) {
+      throw new ApiError(400, 'Punch-out must be between punch-in and the current time');
+    }
+
+    const schedule = await getScheduleForEmployee(attendance.employee);
+    const standardHours = attendance.policySnapshot?.standardHours
+      ?? schedule.standardHours
+      ?? 8;
+    const halfDayThresholdPercent = attendance.policySnapshot?.halfDayThresholdPercent
+      ?? schedule.halfDayThresholdPercent
+      ?? 50;
+    const halfDayThresholdMinutes = getHalfDayThresholdMinutes({
+      standardHours,
+      thresholdPercent: halfDayThresholdPercent,
+    });
+
+    updatedWorkingMinutes = dayjs(updatedPunchOut).diff(dayjs(attendance.punchIn), 'minute');
+    updatedStatus = updatedWorkingMinutes < halfDayThresholdMinutes
+      ? 'half-day'
+      : attendance.isLate ? 'late' : 'present';
+
+    attendance.punchOut = updatedPunchOut;
+    attendance.workingMinutes = updatedWorkingMinutes;
+    attendance.overtimeMinutes = Math.max(0, updatedWorkingMinutes - standardHours * 60);
+    attendance.status = updatedStatus;
+  } else {
+    attendance.status = 'half-day';
+  }
+
+  attendance.punchReviewStatus = 'resolved';
+  attendance.punchReviewHistory.push({
+    reviewedBy: req.user._id,
+    action,
+    reason: reviewReason,
+    previousPunchOut: previous.punchOut,
+    previousStatus: previous.status,
+    previousWorkingMinutes: previous.workingMinutes,
+    updatedPunchOut,
+    updatedStatus,
+    updatedWorkingMinutes,
+  });
+  await attendance.save();
+  await attendance.populate('employee', 'firstName lastName employeeId department designation');
+
+  return res.status(200).json(
+    new ApiResponse(200, attendance, 'Punch exception reviewed'),
   );
 });
 
