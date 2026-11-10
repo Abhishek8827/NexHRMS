@@ -1,0 +1,11 @@
+[33mcommit 65cfafef0ada3c76b9e8db68398053c43bf3bf99[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: ABHISHEK WANI <01abhishekwani@gmail.com>
+Date:   Mon Nov 9 23:09:19 2026 +0530
+
+    Update local server ports and API URLs to use 5201 and 5200
+
+[33mcommit 89858eb8ba1817c75f5f571b5291ab9126ce7754[m
+Author: Abhishek8827 <110009400+Abhishek8827@users.noreply.github.com>
+Date:   Mon Nov 9 16:53:19 2026 +0000
+
+    Stabilize Firebase auth and role access.
