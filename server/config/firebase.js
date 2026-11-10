@@ -1,5 +1,6 @@
 import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { readFirebaseServiceAccount } from '../utils/firebaseServiceAccount.js';
 
 const appName = 'nexhrms';
 
@@ -8,10 +9,19 @@ export const getFirebaseAuth = () => {
 
   if (!app) {
     const options = {};
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const serviceAccount = readFirebaseServiceAccount({
+      json: process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+      base64: process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64,
+    });
 
     if (serviceAccount) {
-      options.credential = cert(JSON.parse(serviceAccount));
+      if (
+        process.env.FIREBASE_PROJECT_ID
+        && process.env.FIREBASE_PROJECT_ID !== serviceAccount.project_id
+      ) {
+        throw new Error('FIREBASE_PROJECT_ID does not match the service-account project_id');
+      }
+      options.credential = cert(serviceAccount);
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       options.credential = applicationDefault();
     } else {

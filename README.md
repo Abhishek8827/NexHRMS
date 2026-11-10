@@ -352,7 +352,7 @@ mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/nexhr
 
 1. Create a Firebase project and enable **Email/Password** under Authentication → Sign-in method.
 2. Register the web app in Firebase and copy its public web configuration into `client/.env` using `client/.env.example` as a template.
-3. Create a Firebase service account for the backend. Store its full JSON privately in `FIREBASE_SERVICE_ACCOUNT_JSON` in the server environment; do not commit it.
+3. Create a Firebase service account for the backend. Store its full JSON privately in either `FIREBASE_SERVICE_ACCOUNT_JSON` or the Base64-encoded `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64` server variable; set only one and never commit the key. The backend checks that the service-account project matches `FIREBASE_PROJECT_ID`.
 4. Set `ADMIN_EMAIL` to the email of the first Firebase Admin account. Create that sign-in in Firebase and verify its email. The backend creates the matching HRMS profile on startup.
 
 Existing MongoDB staff profiles can be linked at first sign-in when a Firebase account with the same verified email exists. MongoDB passwords are not migrated to Firebase; existing staff need Firebase accounts provisioned and a password reset or temporary password before they can sign in. New staff accounts created in the app are provisioned in Firebase with the temporary password set by Admin/HR. Back up the database before rollout: legacy Manager roles are converted to Employee roles at server startup, and Manager-only permissions are removed.
