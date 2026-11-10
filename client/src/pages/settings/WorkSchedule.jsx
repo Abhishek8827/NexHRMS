@@ -30,6 +30,8 @@ const defaultForm = {
   punchOutHour: 18,
   punchOutMinute: 0,
   gracePeriodMinutes: 15,
+  lateMarkingEnabled: true,
+  halfDayThresholdPercent: 50,
   standardHours: 8,
 };
 
@@ -88,6 +90,8 @@ const WorkSchedule = () => {
       punchOutHour: schedule.punchOutTime?.hour ?? 18,
       punchOutMinute: schedule.punchOutTime?.minute ?? 0,
       gracePeriodMinutes: schedule.gracePeriodMinutes ?? 15,
+      lateMarkingEnabled: schedule.lateMarkingEnabled ?? true,
+      halfDayThresholdPercent: schedule.halfDayThresholdPercent ?? 50,
       standardHours: schedule.standardHours ?? 8,
     });
     setModal({ open: true, schedule });
@@ -125,6 +129,8 @@ const WorkSchedule = () => {
           minute: Number(form.punchOutMinute),
         },
         gracePeriodMinutes: Number(form.gracePeriodMinutes),
+        lateMarkingEnabled: form.lateMarkingEnabled,
+        halfDayThresholdPercent: Number(form.halfDayThresholdPercent),
         standardHours: Number(form.standardHours),
       };
 
@@ -257,7 +263,9 @@ const WorkSchedule = () => {
                     {formatTime(s.punchInTime?.hour, s.punchInTime?.minute)}
                   </p>
                   <p className="text-xs text-green-600">
-                    +{s.gracePeriodMinutes}m grace
+                    {s.lateMarkingEnabled === false
+                      ? "Late marking off"
+                      : `+${s.gracePeriodMinutes}m grace`}
                   </p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
@@ -266,7 +274,7 @@ const WorkSchedule = () => {
                     {formatTime(s.punchOutTime?.hour, s.punchOutTime?.minute)}
                   </p>
                   <p className="text-xs text-red-600">
-                    {s.standardHours}h standard
+                    {s.standardHours}h standard · half day under {s.halfDayThresholdPercent ?? 50}%
                   </p>
                 </div>
               </div>
@@ -496,6 +504,34 @@ const WorkSchedule = () => {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={form.lateMarkingEnabled}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, lateMarkingEnabled: e.target.checked }))
+                  }
+                  className="rounded"
+                />
+                Mark late arrivals after the grace period
+              </label>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Half-day threshold (% of standard hours)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.halfDayThresholdPercent}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, halfDayThresholdPercent: e.target.value }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Working Days */}
@@ -530,7 +566,7 @@ const WorkSchedule = () => {
               <span className="font-medium">{form.shiftName}</span> —{" "}
               {formatTime(form.punchInHour, form.punchInMinute)} to{" "}
               {formatTime(form.punchOutHour, form.punchOutMinute)} (
-              {form.standardHours}h) • {form.gracePeriodMinutes}min grace
+              {form.standardHours}h) • {form.lateMarkingEnabled ? `${form.gracePeriodMinutes}min grace` : "late marking off"} • half day below {form.halfDayThresholdPercent}%
             </p>
           </div>
 

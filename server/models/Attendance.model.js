@@ -19,9 +19,34 @@ const AttendanceSchema = new Schema({
   remarks: { type: String, default: '' },
   isManualEntry: { type: Boolean, default: false },
   markedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  policySnapshot: {
+    shiftName: { type: String, default: '' },
+    standardHours: { type: Number, default: null },
+    gracePeriodMinutes: { type: Number, default: null },
+    halfDayThresholdPercent: { type: Number, default: 50 },
+    lateMarkingEnabled: { type: Boolean, default: true },
+  },
+  punchReviewStatus: {
+    type: String,
+    enum: ['not-required', 'pending', 'resolved'],
+    default: 'not-required',
+  },
+  punchReviewHistory: [{
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    reviewedAt: { type: Date, default: Date.now },
+    action: { type: String, enum: ['confirmed-half-day', 'corrected-punch-out'], required: true },
+    reason: { type: String, required: true, trim: true },
+    previousPunchOut: { type: Date, default: null },
+    previousStatus: { type: String, required: true },
+    previousWorkingMinutes: { type: Number, required: true },
+    updatedPunchOut: { type: Date, default: null },
+    updatedStatus: { type: String, required: true },
+    updatedWorkingMinutes: { type: Number, required: true },
+  }],
 }, { timestamps: true });
 
 AttendanceSchema.index({ employee: 1, date: 1 }, { unique: true });
+AttendanceSchema.index({ date: 1, punchReviewStatus: 1, punchOut: 1 });
 
 const Attendance = model('Attendance', AttendanceSchema);
 export default Attendance;

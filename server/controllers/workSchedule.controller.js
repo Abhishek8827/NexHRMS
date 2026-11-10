@@ -58,6 +58,7 @@ export const createSchedule = asyncHandler(async (req, res) => {
     employee, department, shiftName,
     workingDays, punchInTime, punchOutTime,
     gracePeriodMinutes, standardHours, isDefault,
+    lateMarkingEnabled, halfDayThresholdPercent,
   } = req.body;
 
   if (!employee && !department && !isDefault) {
@@ -77,6 +78,8 @@ export const createSchedule = asyncHandler(async (req, res) => {
     punchInTime: punchInTime || { hour: 9, minute: 0 },
     punchOutTime: punchOutTime || { hour: 18, minute: 0 },
     gracePeriodMinutes: gracePeriodMinutes ?? 15,
+    lateMarkingEnabled: lateMarkingEnabled ?? true,
+    halfDayThresholdPercent: halfDayThresholdPercent ?? 50,
     standardHours: standardHours || 8,
     isDefault: Boolean(isDefault),
     createdBy: req.user._id,
