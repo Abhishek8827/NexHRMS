@@ -9,8 +9,8 @@ const router = Router();
 router.use(protect);
 
 router.get('/', getAllDepartments);
-router.post('/', authorize('admin', 'hr'), createDepartment);
-router.put('/:id', authorize('admin', 'hr'), updateDepartment);
+router.post('/', authorize('admin'), createDepartment);
+router.put('/:id', authorize('admin'), updateDepartment);
 router.delete('/:id', authorize('admin'), deleteDepartment);
 
 export default router;

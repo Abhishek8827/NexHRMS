@@ -3,7 +3,7 @@ import { getTasks, createTask, updateTask, updateTaskStatus, addComment, deleteT
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
-router.use(protect);
+router.use(protect, authorize('admin'));
 
 router.get('/', getTasks);
 router.post('/', authorize('admin', 'hr'), createTask);

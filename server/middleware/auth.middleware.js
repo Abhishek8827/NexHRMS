@@ -2,6 +2,7 @@ import User from '../models/User.model.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { getFirebaseAuth } from '../config/firebase.js';
+import { hasAllowedRole } from '../utils/roleAccess.js';
 
 export const protect = asyncHandler(async (req, res, next) => {
   const authorization = req.headers.authorization;
@@ -56,7 +57,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 });
 
 export const authorize = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
+  if (!hasAllowedRole(req.user.role, roles)) {
     throw new ApiError(403, `Access denied. Required roles: ${roles.join(', ')}`);
   }
   next();

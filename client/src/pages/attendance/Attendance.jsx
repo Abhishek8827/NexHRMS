@@ -25,10 +25,12 @@ import { MONTHS } from "../../utils/constants";
 import { toast } from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 import AttendanceExceptions from "./AttendanceExceptions";
+import HRAttendanceOverview from "./HRAttendanceOverview";
 
 const statusColor = {
   present: "green",
   late: "yellow",
+  "weekly-off": "gray",
   absent: "red",
   "half-day": "yellow",
   "on-leave": "blue",
@@ -37,7 +39,7 @@ const statusColor = {
 
 const Attendance = () => {
   const dispatch = useDispatch();
-  const { isAdminOrHR } = useAuth();
+  const { isAdminOrHR, isAdmin, isHR } = useAuth();
   const [showExceptions, setShowExceptions] = useState(false);
   const { records, summary, today, loading, punchLoading } = useSelector(
     (s) => s.attendance,
@@ -47,11 +49,11 @@ const Attendance = () => {
   const [year, setYear] = useState(now.getFullYear());
 
   useEffect(() => {
-    dispatch(fetchTodayAttendance());
-  }, [dispatch]);
+    if (!isHR) dispatch(fetchTodayAttendance());
+  }, [dispatch, isHR]);
   useEffect(() => {
-    dispatch(fetchMyAttendance({ month, year }));
-  }, [dispatch, month, year]);
+    if (!isHR) dispatch(fetchMyAttendance({ month, year }));
+  }, [dispatch, isHR, month, year]);
 
   const handlePrevMonth = () => {
     if (month === 1) {
@@ -88,12 +90,14 @@ const Attendance = () => {
           onClick={() => setShowExceptions(false)}
           className="text-sm font-medium text-primary-600 hover:text-primary-700"
         >
-          ← Back to my attendance
+          ← Back to attendance
         </button>
         <AttendanceExceptions />
       </div>
     );
   }
+
+  if (isHR) return <HRAttendanceOverview />;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -118,7 +122,7 @@ const Attendance = () => {
       </div>
 
       {/* Today Punch Card */}
-      {isCurrentMonth && (
+      {isCurrentMonth && isAdmin && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -213,6 +217,24 @@ const Attendance = () => {
             value: summary?.absent || 0,
             color:
               "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400",
+          },
+          {
+            label: "Weekly Offs",
+            value: summary?.weeklyOff || 0,
+            color:
+              "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
+          },
+          {
+            label: "Holidays",
+            value: summary?.holiday || 0,
+            color:
+              "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400",
+          },
+          {
+            label: "On Leave",
+            value: summary?.onLeave || 0,
+            color:
+              "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400",
           },
           {
             label: "Total Hours",

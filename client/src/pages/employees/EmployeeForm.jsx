@@ -28,6 +28,7 @@ const createSchema = z.object({
   phone: z.string().optional(),
   role: z.enum(["admin", "hr", "employee"]),
   designation: z.string().optional(),
+  attendanceCode: z.string().optional(),
   department: z.string().optional(),
   joiningDate: z.string().optional(),
   basicSalary: z.coerce.number().min(0).optional(),
@@ -40,6 +41,7 @@ const editSchema = z.object({
   phone: z.string().optional(),
   role: z.enum(["admin", "hr", "employee"]),
   designation: z.string().optional(),
+  attendanceCode: z.string().optional(),
   department: z.string().optional(),
   joiningDate: z.string().optional(),
   basicSalary: z.coerce.number().min(0).optional(),
@@ -115,6 +117,7 @@ const EmployeeForm = () => {
         phone: selected.phone || "",
         role: selected.role === "manager" ? "employee" : selected.role || "employee",
         designation: selected.designation || "",
+        attendanceCode: selected.attendanceCode || "",
         department: selected.department?._id || selected.department || "",
         joiningDate: selected.joiningDate
           ? new Date(selected.joiningDate).toISOString().split("T")[0]
@@ -309,6 +312,17 @@ const EmployeeForm = () => {
               error={errors.designation?.message}
               {...register("designation")}
             />
+            <div>
+              <Input
+                label="Attendance system employee code"
+                placeholder="e.g. 0001"
+                error={errors.attendanceCode?.message}
+                {...register("attendanceCode")}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Match this code to the Employee Code in the monthly attendance PDF. Keep leading zeros.
+              </p>
+            </div>
 
             <Input
               label="Joining Date"

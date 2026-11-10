@@ -5,6 +5,6 @@ import { authorize, protect } from '../middleware/auth.middleware.js';
 const router = Router();
 
 router.get('/me', protect, getCurrentUser);
-router.post('/register', protect, authorize('admin', 'hr'), registerEmployee);
+router.post('/register', protect, authorize('admin'), registerEmployee);
 
 export default router;

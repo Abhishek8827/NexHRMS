@@ -34,6 +34,7 @@ const PayrollSchema = new Schema({
     enum: ['draft', 'processed', 'paid'],
     default: 'draft',
   },
+  finalizedAt: { type: Date, default: null },
   payslipUrl: { type: String, default: null },
   processedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   paidAt: { type: Date },
