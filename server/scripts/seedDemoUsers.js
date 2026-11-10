@@ -14,6 +14,53 @@ const demoUsers = [
 ];
 
 const generateTemporaryPassword = () => `${randomBytes(18).toString('base64url')}aA1!`;
+import "dotenv/config";
+import { randomBytes } from "node:crypto";
+import connectDB from "../config/db.js";
+import { getFirebaseAuth } from "../config/firebase.js";
+import User from "../models/User.model.js";
+import { generateEmployeeId } from "../utils/generateEmployeeId.js";
+
+const demoUsers = [
+  {
+    firstName: "Riley",
+    lastName: "HR Demo",
+    email: "hr.demo@example.com",
+    role: "hr",
+    designation: "HR Coordinator",
+  },
+  {
+    firstName: "Alex",
+    lastName: "Sample",
+    email: "employee1.demo@example.com",
+    role: "employee",
+    designation: "Staff Member",
+  },
+  {
+    firstName: "Jamie",
+    lastName: "Sample",
+    email: "employee2.demo@example.com",
+    role: "employee",
+    designation: "Staff Member",
+  },
+  {
+    firstName: "Taylor",
+    lastName: "Sample",
+    email: "employee3.demo@example.com",
+    role: "employee",
+    designation: "Staff Member",
+  },
+  {
+    firstName: "Morgan",
+    lastName: "Sample",
+    email: "employee4.demo@example.com",
+    role: "employee",
+    designation: "Staff Member",
+  },
+];
+
+const generateTemporaryPassword = () =>
+  `${randomBytes(18).toString("base64url")}aA1!`;
 
 const findFirebaseUserByEmail = async (firebaseAuth, email) => {
   try {
@@ -33,6 +80,18 @@ const createDemoUsers = async () => {
   }
   if (!process.env.MONGODB_URI) {
     throw new Error('MONGODB_URI is required');
+  if (!["development", "test"].includes(process.env.NODE_ENV)) {
+    throw new Error(
+      "Demo accounts may only be seeded when NODE_ENV=development or test",
+    );
+  }
+  if (process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error(
+      "Set ALLOW_DEMO_SEED=true for this one-time development-only operation",
+    );
+  }
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is required");
   }
 
   await connectDB();
