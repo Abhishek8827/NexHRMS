@@ -918,3 +918,7 @@ npm run seed:attendance-employees
 ```
 
 The seeder expects the server's normal MongoDB environment to be configured. Never paste `.env` values into chat or commit them.
+
+## Employee spreadsheet import
+
+Admins can open **Employees → Import Spreadsheet**, download the CSV template, and preview `.xlsx` or UTF-8 `.csv` files (maximum 5 MB / 1,000 rows). Match rows using exact Employee ID and/or Attendance Code only; the importer never matches by name or email. It previews diffs, rejects duplicates and invalid department/date/salary values, retains the original file, and requires explicit confirmation. Blank cells leave existing fields unchanged. Only first/last name, phone, designation, department, joining date, and basic salary are importable; email, role, status, login identity, and Admin profiles are excluded. This initial workflow updates existing non-Admin profiles and does not provision Firebase accounts. Confirmed multi-row updates run in a MongoDB transaction, so the target MongoDB must support transactions (replica set or sharded cluster).

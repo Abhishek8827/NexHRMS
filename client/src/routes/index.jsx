@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'));
 const EmployeeList = lazy(() => import('../pages/employees/EmployeeList'));
 const EmployeeForm = lazy(() => import('../pages/employees/EmployeeForm'));
 const EmployeeDetails = lazy(() => import('../pages/employees/EmployeeDetails'));
+const EmployeeSpreadsheetImport = lazy(() => import('../pages/employees/EmployeeSpreadsheetImport'));
 const Attendance = lazy(() => import('../pages/attendance/Attendance'));
 const AttendanceImports = lazy(() => import('../pages/attendance/AttendanceImports'));
 const Leaves = lazy(() => import('../pages/leaves/Leaves'));
@@ -51,6 +52,11 @@ const router = createBrowserRouter([
             element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.employeeDirectory} />,
             children: [
               { index: true, element: <EmployeeList /> },
+              {
+                path: 'import',
+                element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
+                children: [{ index: true, element: <EmployeeSpreadsheetImport /> }],
+              },
               { path: ':id', element: <EmployeeDetails /> },
               {
                 path: 'new',
