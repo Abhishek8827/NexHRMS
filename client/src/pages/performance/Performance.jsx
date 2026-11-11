@@ -146,7 +146,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
             </p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge color={STATUS_COLOR[review.status]}>
-                {review.status.replace(/-/g, " ")}
+                {review.status === "manager-review" ? "Admin/HR review" : review.status.replace(/-/g, " ")}
               </Badge>
               {grade && (
                 <span
@@ -271,7 +271,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
                 {review.managerRating != null && (
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                     <p className="text-xs font-medium text-gray-500 mb-2">
-                      Manager Rating
+                      Admin/HR Rating
                     </p>
                     <StarRating value={review.managerRating} readonly />
                     {review.managerComments && (
@@ -317,7 +317,7 @@ const ReviewCard = ({ review, onAction, canManage, currentUserId }) => {
                     size="sm"
                     onClick={() => onAction("manager-review", review)}
                   >
-                    <Check className="w-4 h-4" /> Submit Manager Review
+                    <Check className="w-4 h-4" /> Submit Admin/HR Review
                   </Button>
                 )}
               </div>
@@ -443,7 +443,7 @@ const SelfReviewModal = ({ review, onClose, onSubmit }) => {
   );
 };
 
-// ── Manager Review Modal ──────────────────────────────────
+// ── Admin/HR Review Modal ──────────────────────────────────
 const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
   const [managerRating, setManagerRating] = useState(
     review?.managerRating || 0,
@@ -485,7 +485,7 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
 
   const handleSubmit = async () => {
     if (!managerRating) {
-      toast.error("Please provide a manager rating");
+      toast.error("Please provide a Admin/HR rating");
       return;
     }
     if (!grade) {
@@ -493,7 +493,7 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
       return;
     }
     if (!managerComments.trim()) {
-      toast.error("Please add manager comments");
+      toast.error("Please add Admin/HR comments");
       return;
     }
     setSubmitting(true);
@@ -546,7 +546,7 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Manager Rating <span className="text-red-500">*</span>
+            Admin/HR Rating <span className="text-red-500">*</span>
           </label>
           <StarRating
             value={managerRating}
@@ -591,7 +591,7 @@ const ManagerReviewModal = ({ review, onClose, onSubmit }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Manager Comments <span className="text-red-500">*</span>
+          Admin/HR Comments <span className="text-red-500">*</span>
         </label>
         <textarea
           rows={3}
@@ -946,7 +946,7 @@ const Performance = () => {
         </div>
       </Modal>
 
-      {/* Self / Manager Review Modal */}
+      {/* Self / Admin/HR Review Modal */}
       <Modal
         isOpen={actionModal.open}
         onClose={() =>
@@ -955,7 +955,7 @@ const Performance = () => {
         title={
           actionModal.type === "self-review"
             ? "Submit Self Review"
-            : "Submit Manager Review"
+            : "Submit Admin/HR Review"
         }
         size="lg"
       >

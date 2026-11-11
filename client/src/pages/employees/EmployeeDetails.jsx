@@ -50,7 +50,6 @@ const EmployeeDetails = () => {
         ['Role', employee.role],
         ['Status', employee.status],
         ['Joining date', employee.joiningDate ? formatDate(employee.joiningDate) : '—'],
-        ['Manager', employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : '—'],
       ],
     },
     {

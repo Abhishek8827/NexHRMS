@@ -48,7 +48,7 @@ export const createJob = asyncHandler(async (req, res) => {
     .populate('department', 'name')
     .populate('postedBy', 'firstName lastName');
 
-  // ── NOTIFICATION: Notify ALL employees and managers ────
+  // ── NOTIFICATION: Notify all employees ────────────────
   // Only send notification if job is published (not draft)
   if (job.status === 'open') {
     await createNotification({

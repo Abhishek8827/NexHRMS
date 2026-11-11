@@ -91,7 +91,7 @@ export const registerEmployee = asyncHandler(async (req, res) => {
     });
 
     const createdEmployee = await User.findById(employee._id)
-      .select('-password -refreshToken')
+      .select('-password -refreshToken -manager')
       .populate('department', 'name code');
 
     return res.status(201).json(
@@ -105,9 +105,8 @@ export const registerEmployee = asyncHandler(async (req, res) => {
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id)
-    .select('-password -refreshToken')
+    .select('-password -refreshToken -manager')
     .populate('department', 'name code')
-    .populate('manager', 'firstName lastName designation');
 
   return res.status(200).json(new ApiResponse(200, user, 'User profile fetched'));
 });

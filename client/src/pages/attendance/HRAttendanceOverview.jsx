@@ -25,6 +25,8 @@ const HRAttendanceOverview = () => {
   const [period, setPeriod] = useState(getPeriod);
   const [records, setRecords] = useState([]);
   const [search, setSearch] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [status, setStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [errorVersion, setErrorVersion] = useState(0);
@@ -32,9 +34,22 @@ const HRAttendanceOverview = () => {
 
   useEffect(() => {
     let active = true;
+    api.get('/employees', { params: { status: 'all', page: 1, limit: 1000 } })
+      .then((response) => {
+        if (active) setEmployees(response.data.data?.employees || []);
+      })
+      .catch((error) => {
+        if (active) toast.error(error.response?.data?.message || 'Unable to load employee list.');
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const employeeFilter = selectedEmployee === 'all' ? {} : { employee: selectedEmployee };
     Promise.all([
-      api.get('/attendance/all', { params: { month, year } }),
-      api.get('/attendance/monthly', { params: { month, year } }),
+      api.get('/attendance/all', { params: { month, year, ...employeeFilter } }),
+      api.get('/attendance/monthly', { params: { month, year, ...employeeFilter } }),
     ])
       .then(([legacyResponse, monthlyResponse]) => {
         if (!active) return;
@@ -48,6 +63,8 @@ const HRAttendanceOverview = () => {
           punchOut: day.outTime,
           workingMinutes: day.workMinutes || 0,
           overtimeMinutes: day.overtimeMinutes || 0,
+          breakMinutes: day.breakMinutes || 0,
+          rawStatus: day.rawStatus,
           status: day.status,
         })));
         const legacyRecords = (legacyResponse.data.data || []).filter(
@@ -66,7 +83,7 @@ const HRAttendanceOverview = () => {
       });
 
     return () => { active = false; };
-  }, [month, year, errorVersion]);
+  }, [month, year, selectedEmployee, errorVersion]);
 
   const visibleRecords = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -79,9 +96,11 @@ const HRAttendanceOverview = () => {
         employee?.department?.name,
         employee?.designation,
       ].some((value) => String(value || '').toLowerCase().includes(query));
-      return matchesSearch && (status === 'all' || record.status === status);
+      const employeeId = String(employee?._id || employee || '');
+      const matchesEmployee = selectedEmployee === 'all' || employeeId === selectedEmployee;
+      return matchesEmployee && matchesSearch && (status === 'all' || record.status === status);
     });
-  }, [records, search, status]);
+  }, [records, search, selectedEmployee, status]);
 
   const statusCounts = useMemo(() => records.reduce((counts, record) => {
     counts[record.status] = (counts[record.status] || 0) + 1;
@@ -95,20 +114,40 @@ const HRAttendanceOverview = () => {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">Monthly Attendance</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Read-only employee attendance records.</p>
         </div>
-        <label className="text-sm text-gray-600 dark:text-gray-300">
-          Month
-          <input
-            type="month"
-            value={period}
-            onChange={(event) => {
-              if (event.target.value) {
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="block text-sm text-gray-600 dark:text-gray-300">
+            Month
+            <input
+              type="month"
+              value={period}
+              onChange={(event) => {
+                if (event.target.value) {
+                  setLoading(true);
+                  setPeriod(event.target.value);
+                }
+              }}
+              className="mt-1 block rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            />
+          </label>
+          <label className="block min-w-56 text-sm text-gray-600 dark:text-gray-300">
+            Employee
+            <select
+              value={selectedEmployee}
+              onChange={(event) => {
                 setLoading(true);
-                setPeriod(event.target.value);
-              }
-            }}
-            className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-          />
-        </label>
+                setSelectedEmployee(event.target.value);
+              }}
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            >
+              <option value="all">All employees</option>
+              {employees.map((employee) => (
+                <option key={employee._id} value={employee._id}>
+                  {employee.firstName} {employee.lastName} · {employee.employeeId}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -153,9 +192,9 @@ const HRAttendanceOverview = () => {
       {loading ? <div className="flex justify-center py-12"><Spinner /></div> : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full text-left">
+            <table className="min-w-[1120px] w-full text-left">
               <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
-                <tr>{['Employee', 'ID', 'Department', 'Date', 'In', 'Out', 'Worked', 'Status'].map((heading) => (
+                <tr>{['Employee', 'ID', 'Department', 'Date', 'In', 'Out', 'Worked', 'Break', 'OT', 'Status'].map((heading) => (
                   <th key={heading} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">{heading}</th>
                 ))}</tr>
               </thead>
@@ -171,7 +210,12 @@ const HRAttendanceOverview = () => {
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{record.punchIn ? formatTime(record.punchIn) : '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{record.punchOut ? formatTime(record.punchOut) : '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{formatMinutesToHours(record.workingMinutes || 0)}</td>
-                    <td className="px-4 py-3"><Badge color={statusColor[record.status] || 'gray'}>{record.status}</Badge></td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{formatMinutesToHours(record.breakMinutes || 0)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{formatMinutesToHours(record.overtimeMinutes || 0)}</td>
+                    <td className="px-4 py-3">
+                      <Badge color={statusColor[record.status] || 'gray'}>{record.status || 'Unmapped'}</Badge>
+                      {record.rawStatus && <span className="ml-2 text-xs text-gray-500">{record.rawStatus}</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>

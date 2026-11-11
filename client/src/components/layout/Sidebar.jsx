@@ -39,6 +39,7 @@ const navItems = [
   { label: "Complaints", icon: MessageSquare, path: "/complaints", roles: FEATURE_ACCESS.adminOperations },
   { label: "Reports", icon: BarChart2, path: "/reports", roles: FEATURE_ACCESS.reports },
   { label: "Work Schedules", icon: Settings, path: "/settings/schedules", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Salary Rules & Holidays", icon: Calendar, path: "/settings/payroll-rules", roles: FEATURE_ACCESS.adminOperations },
 ];
 
 // Role-based accent colors — each role gets its own identity
@@ -46,12 +47,12 @@ const roleConfig = {
   admin: {
     gradient: "from-violet-500 to-indigo-600",
     badge: "bg-violet-500/20 text-violet-300 border-violet-500/30",
-    label: "Super Admin",
+    label: "Admin",
   },
   hr: {
     gradient: "from-blue-500 to-cyan-500",
     badge: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    label: "HR Manager",
+    label: "HR",
   },
   employee: {
     gradient: "from-orange-500 to-amber-500",

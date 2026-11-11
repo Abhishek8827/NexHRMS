@@ -137,7 +137,7 @@ export const submitSelfReview = asyncHandler(async (req, res) => {
   review.status = 'manager-review';
   await review.save();
 
-  // Notify reviewer (manager/HR)
+  // Notify the assigned Admin/HR reviewer
   await createNotification({
     type: 'general',
     title: 'Self Review Submitted',
@@ -189,6 +189,6 @@ export const submitManagerReview = asyncHandler(async (req, res) => {
     .populate('reviewer', 'firstName lastName');
 
   return res.status(200).json(
-    new ApiResponse(200, populated, 'Manager review submitted')
+    new ApiResponse(200, populated, 'Admin/HR review submitted')
   );
 });

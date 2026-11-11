@@ -1,10 +1,14 @@
 import Payroll from '../models/Payroll.model.js';
 import User from '../models/User.model.js';
-import Attendance from '../models/Attendance.model.js';
+import AttendanceMonth from '../models/AttendanceMonth.model.js';
+import AttendanceImport from '../models/AttendanceImport.model.js';
+import PayrollRule from '../models/PayrollRule.model.js';
+import { calculateSalaryDraft } from '../utils/salaryCalculator.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import dayjs from 'dayjs';
+import mongoose from 'mongoose';
 
 // ── Payroll Calculation Engine ─────────────────────────────
 const calculatePayroll = (basicSalary, presentDays, workingDays, lopDays = 0) => {
@@ -57,84 +61,130 @@ const calculatePayroll = (basicSalary, presentDays, workingDays, lopDays = 0) =>
   };
 };
 
-// POST /api/v1/payroll/process — Process payroll for one employee
+// POST /api/v1/payroll/process — Generate a reviewable salary draft from imported monthly attendance
 export const processPayroll = asyncHandler(async (req, res) => {
-  const { employeeId, month, year, bonus = 0, overtimePay = 0 } = req.body;
+  const employeeId = String(req.body.employeeId || '');
+  const month = Number(req.body.month);
+  const year = Number(req.body.year);
 
-  if (!employeeId || !month || !year) {
-    throw new ApiError(400, 'Employee ID, month, and year are required');
+  if (!mongoose.Types.ObjectId.isValid(employeeId)
+      || !Number.isInteger(month) || month < 1 || month > 12
+      || !Number.isInteger(year) || year < 2000 || year > 2200) {
+    throw new ApiError(400, 'Employee, valid month, and valid year are required.');
   }
 
-  // Check if payroll already processed
   const existing = await Payroll.findOne({ employee: employeeId, month, year });
-  if (existing && existing.status !== 'draft') {
-    throw new ApiError(400, `Payroll for this month is already ${existing.status}`);
+  if (existing) {
+    throw new ApiError(409, 'A salary record already exists for this employee and month. Open it for review; generated records are not silently replaced.');
   }
 
-  const employee = await User.findById(employeeId);
-  if (!employee) throw new ApiError(404, 'Employee not found');
+  const employee = await User.findById(employeeId).select('firstName lastName employeeId basicSalary');
+  if (!employee) throw new ApiError(404, 'Employee not found.');
+  if (!Number.isFinite(employee.basicSalary) || employee.basicSalary <= 0) {
+    throw new ApiError(409, 'Set this employee’s basic salary before generating a salary draft.');
+  }
 
-  // Get attendance data for the month
-  const startDate = dayjs(`${year}-${month}-01`).startOf('month').toDate();
-  const endDate = dayjs(`${year}-${month}-01`).endOf('month').toDate();
+  const monthStart = new Date(Date.UTC(year, month - 1, 1));
+  const rule = await PayrollRule.findOne({ effectiveAt: { $lte: monthStart } })
+    .sort({ effectiveAt: -1, version: -1 });
+  if (!rule) {
+    throw new ApiError(409, 'No salary rule is effective for this month. Create and save a Salary Rules version first.');
+  }
 
-  const attendanceRecords = await Attendance.find({
-    employee: employeeId,
-    date: { $gte: startDate, $lte: endDate },
+  const monthlyAttendance = await AttendanceMonth.findOne({ employee: employeeId, month, year });
+  if (!monthlyAttendance) {
+    throw new ApiError(409, 'No imported monthly attendance exists for this employee and month. Import and confirm the PDF first.');
+  }
+
+  const sourceImport = await AttendanceImport.findById(monthlyAttendance.sourceImport)
+    .select('records status fileName reportMonthLabel');
+  if (!sourceImport || sourceImport.status !== 'imported') {
+    throw new ApiError(409, 'The source attendance import is not confirmed. Confirm it before generating salary.');
+  }
+  const sourceRow = sourceImport.records.find((record) => String(record.employee) === String(employeeId));
+  if (!sourceRow) throw new ApiError(409, 'Could not find this employee in the confirmed source PDF.');
+  if (sourceRow.errors?.length) {
+    throw new ApiError(409, 'Attendance has blocking PDF validation errors; resolve them before salary generation.', sourceRow.errors);
+  }
+
+  const attendanceForCalculation = {
+    ...monthlyAttendance.toObject(),
+    sourceWarnings: sourceRow.warnings || [],
+  };
+  const calculation = calculateSalaryDraft({
+    monthlyAttendance: attendanceForCalculation,
+    rule,
+    basicSalary: employee.basicSalary,
   });
-
-  // Count working days (Mon-Fri) in the month
-  let workingDays = 0;
-  let current = dayjs(startDate);
-  while (current.isBefore(dayjs(endDate)) || current.isSame(dayjs(endDate), 'day')) {
-    if (current.day() !== 0 && current.day() !== 6) workingDays++;
-    current = current.add(1, 'day');
+  if (calculation.errors.length) {
+    throw new ApiError(409, 'Salary draft cannot be generated until attendance or rule exceptions are resolved.', calculation.errors);
   }
 
-  const presentDays = attendanceRecords.filter(
-    r => ['present', 'late', 'half-day'].includes(r.status)
-  ).length;
-
-  const absentDays = workingDays - presentDays - attendanceRecords.filter(
-    r => r.status === 'on-leave'
-  ).length;
-
-  const lopDays = Math.max(0, absentDays);
-
-  const calculated = calculatePayroll(
-    employee.basicSalary || 0,
-    presentDays,
-    workingDays,
-    lopDays
-  );
-
-  const payrollData = {
-    ...calculated,
-    employee: employeeId,
+  const result = calculation.result;
+  const payroll = await Payroll.create({
+    employee: employee._id,
     month,
     year,
-    bonus: Number(bonus),
-    overtimePay: Number(overtimePay),
-    workingDays,
-    presentDays,
-    absentDays,
-    lopDays,
-    grossSalary: calculated.grossSalary + Number(bonus) + Number(overtimePay),
-    netSalary: calculated.netSalary + Number(bonus) + Number(overtimePay),
-    status: 'processed',
+    basicSalary: result.basicSalary,
+    hra: result.components.filter((component) => component.type === 'earning' && component.name.toLowerCase() === 'hra').reduce((sum, component) => sum + component.amount, 0),
+    conveyanceAllowance: result.components.filter((component) => component.type === 'earning' && component.name.toLowerCase().includes('conveyance')).reduce((sum, component) => sum + component.amount, 0),
+    medicalAllowance: result.components.filter((component) => component.type === 'earning' && component.name.toLowerCase().includes('medical')).reduce((sum, component) => sum + component.amount, 0),
+    specialAllowance: result.components.filter((component) => component.type === 'earning' && component.name.toLowerCase().includes('special')).reduce((sum, component) => sum + component.amount, 0),
+    overtimePay: 0,
+    grossSalary: result.grossSalary,
+    totalDeductions: result.totalDeductions,
+    netSalary: result.netSalary,
+    workingDays: result.workingDays,
+    presentDays: result.presentDays,
+    absentDays: result.absentDays,
+    lopDays: result.lopDays,
+    lopDeduction: result.lopDeduction,
+    status: 'draft',
+    reviewStatus: 'pending',
     processedBy: req.user._id,
     processedAt: new Date(),
-  };
+    payrollRuleVersion: rule.version,
+    sourceAttendanceMonth: monthlyAttendance._id,
+    calculationSnapshot: {
+      rules: rule.toObject(),
+      attendance: {
+        importId: sourceImport._id,
+        fileName: sourceImport.fileName,
+        reportMonthLabel: sourceImport.reportMonthLabel,
+        sourceSummary: monthlyAttendance.sourceSummary,
+        days: monthlyAttendance.days,
+      },
+      result,
+      warnings: calculation.warnings,
+    },
+  });
 
-  const payroll = await Payroll.findOneAndUpdate(
-    { employee: employeeId, month, year },
-    { $set: payrollData },
-    { upsert: true, new: true }
-  ).populate('employee', 'firstName lastName employeeId designation');
-
-  return res.status(200).json(
-    new ApiResponse(200, payroll, 'Payroll processed successfully')
+  await payroll.populate('employee', 'firstName lastName employeeId designation');
+  return res.status(201).json(
+    new ApiResponse(201, payroll, 'Salary draft generated from imported attendance and saved for Admin review; it is not finalized or paid.'),
   );
+});
+
+// PATCH /api/v1/payroll/:id/review — Admin approval finalizes a salary draft
+export const reviewPayroll = asyncHandler(async (req, res) => {
+  const { approve, comment = '' } = req.body;
+  if (approve !== true) throw new ApiError(400, 'Explicitly approve the salary draft to finalize it.');
+  const payroll = await Payroll.findOneAndUpdate(
+    { _id: req.params.id, status: 'draft', reviewStatus: 'pending', finalizedAt: null },
+    {
+      $set: {
+        status: 'processed',
+        reviewStatus: 'approved',
+        reviewedBy: req.user._id,
+        reviewedAt: new Date(),
+        reviewComment: String(comment).trim(),
+        finalizedAt: new Date(),
+      },
+    },
+    { new: true, runValidators: true },
+  ).populate('employee', 'firstName lastName employeeId designation');
+  if (!payroll) throw new ApiError(404, 'Pending salary draft not found; it may already be reviewed.');
+  return res.status(200).json(new ApiResponse(200, payroll, 'Salary reviewed and finalized.'));
 });
 
 // GET /api/v1/payroll/my — Employee sees own payslips
@@ -200,13 +250,20 @@ export const getCTCBreakdown = asyncHandler(async (req, res) => {
 
 // PUT /api/v1/payroll/:id/pay — Mark as paid
 export const markAsPaid = asyncHandler(async (req, res) => {
-  const payroll = await Payroll.findByIdAndUpdate(
-    req.params.id,
+  const payroll = await Payroll.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      status: 'processed',
+      $or: [
+        { finalizedAt: { $ne: null } },
+        { calculationSnapshot: { $exists: false } },
+      ],
+    },
     { $set: { status: 'paid', paidAt: new Date() } },
     { new: true }
   );
 
-  if (!payroll) throw new ApiError(404, 'Payroll record not found');
+  if (!payroll) throw new ApiError(409, 'Only an Admin-reviewed and finalized salary can be marked paid.');
 
   return res.status(200).json(
     new ApiResponse(200, payroll, 'Payroll marked as paid')

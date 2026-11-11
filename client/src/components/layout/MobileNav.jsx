@@ -51,6 +51,7 @@ const allNavItems = [
   { label: "Reports", icon: BarChart2, path: "/reports", roles: FEATURE_ACCESS.reports },
   { label: "Company", icon: Building2, path: "/company", roles: FEATURE_ACCESS.adminOperations },
   { label: "Work Schedules", icon: Settings, path: "/settings/schedules", roles: FEATURE_ACCESS.adminOperations },
+  { label: "Salary Rules & Holidays", icon: Calendar, path: "/settings/payroll-rules", roles: FEATURE_ACCESS.adminOperations }
 ];
 
 const roleColors = {
@@ -60,8 +61,8 @@ const roleColors = {
 };
 
 const roleLabel = {
-  admin: "Super Admin",
-  hr: "HR Manager",
+  admin: "Admin",
+  hr: "HR",
   employee: "Employee",
 };
 

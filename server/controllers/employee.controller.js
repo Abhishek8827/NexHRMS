@@ -28,9 +28,8 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
 
   const [employees, totalCount] = await Promise.all([
     User.find(filter)
-      .select('-password -refreshToken')
+      .select('-password -refreshToken -manager')
       .populate('department', 'name code')
-      .populate('manager', 'firstName lastName designation')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum),
@@ -71,9 +70,8 @@ export const updateOwnProfile = asyncHandler(async (req, res) => {
     { $set: updateData },
     { new: true, runValidators: true },
   )
-    .select('-password -refreshToken')
+    .select('-password -refreshToken -manager')
     .populate('department', 'name code')
-    .populate('manager', 'firstName lastName designation');
 
   return res.status(200).json(
     new ApiResponse(200, user, 'Profile updated successfully'),
@@ -89,9 +87,8 @@ export const getEmployeeById = asyncHandler(async (req, res) => {
   }
 
   const employee = await User.findById(req.params.id)
-    .select('-password -refreshToken')
+    .select('-password -refreshToken -manager')
     .populate('department', 'name code')
-    .populate('manager', 'firstName lastName designation');
 
   if (!employee) throw new ApiError(404, 'Employee not found');
 
@@ -110,7 +107,7 @@ export const getEmployeeById = asyncHandler(async (req, res) => {
 export const updateEmployee = asyncHandler(async (req, res) => {
   const allowedFields = [
     'firstName', 'lastName', 'phone', 'designation',
-    'department', 'manager', 'joiningDate', 'dateOfBirth',
+    'department', 'joiningDate', 'dateOfBirth',
     'gender', 'address', 'emergencyContact', 'bankDetails',
     'basicSalary', 'attendanceCode',
   ];
@@ -149,9 +146,8 @@ export const updateEmployee = asyncHandler(async (req, res) => {
     { $set: updateData },
     { new: true, runValidators: true }
   )
-    .select('-password -refreshToken')
+    .select('-password -refreshToken -manager')
     .populate('department', 'name code')
-    .populate('manager', 'firstName lastName designation');
 
   if (!employee) throw new ApiError(404, 'Employee not found');
 

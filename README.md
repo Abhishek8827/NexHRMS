@@ -897,3 +897,24 @@ Vercel Frontend
 ```
 
 Happy coding!
+
+## Attendance PDF and salary workflow
+
+1. In the Admin account, open **Attendance → Monthly PDF Import**, preview the text PDF, review validation issues, then confirm the import.
+2. Open **Attendance** and select a month and employee to see the imported daily IN/OUT/WORK/Break/OT/status values.
+3. Open **Salary Rules & Holidays** and save an effective-dated rules version. Configure the schedule, grace/late-coming conversion, holiday calendar, absence/half-day weights, leave treatment, and any company-confirmed earnings/deductions. No holiday list or statutory components are prefilled.
+4. In **Payroll → Salary Review**, generate a draft for an employee/month with confirmed attendance. Inspect its calculation snapshot and warnings, then explicitly review/finalize it. Only finalized records are visible to HR/employees; marking paid is a separate Admin action.
+
+The PDF employee mapping seed updates existing HRMS employee accounts only; it does not create login accounts. First run a dry run from the `server` directory:
+
+```bash
+npm run seed:attendance-employees -- --dry-run
+```
+
+Review unresolved or conflicting matches. Correct the seed JSON or employee profiles as needed, then apply the idempotent mapping and set the requested ₹20,000 basic salary:
+
+```bash
+npm run seed:attendance-employees
+```
+
+The seeder expects the server's normal MongoDB environment to be configured. Never paste `.env` values into chat or commit them.

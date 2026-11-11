@@ -26,6 +26,7 @@ const Complaints = lazy(() => import('../pages/complaints/Complaints'));
 const Reports = lazy(() => import('../pages/reports/Reports'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
 const WorkSchedule = lazy(() => import('../pages/settings/WorkSchedule'));
+const PayrollRules = lazy(() => import('../pages/settings/PayrollRules'));
 const CompanyProfile = lazy(() => import('../pages/company/CompanyProfile'));
 
 const router = createBrowserRouter([
@@ -67,6 +68,11 @@ const router = createBrowserRouter([
             path: 'settings/schedules',
             element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
             children: [{ index: true, element: <WorkSchedule /> }],
+          },
+          {
+            path: 'settings/payroll-rules',
+            element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
+            children: [{ index: true, element: <PayrollRules /> }],
           },
           { path: 'attendance', element: <Attendance /> },
           {
