@@ -10,6 +10,7 @@ import {
   Filter,
   Edit,
   UserX,
+  FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
   X,
@@ -210,11 +211,18 @@ const EmployeeList = () => {
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => navigate("/employees/new")} size="sm">
-            <Plus className="w-4 h-4" />{" "}
-            <span className="hidden sm:inline">Add Employee</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => navigate("/employees/import")} size="sm">
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">Import Spreadsheet</span>
+              <span className="sm:hidden">Import</span>
+            </Button>
+            <Button onClick={() => navigate("/employees/new")} size="sm">
+              <Plus className="w-4 h-4" />{" "}
+              <span className="hidden sm:inline">Add Employee</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </div>
         )}
       </div>
 
