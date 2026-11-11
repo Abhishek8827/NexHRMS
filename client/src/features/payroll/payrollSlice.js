@@ -37,6 +37,18 @@ export const processPayroll = createAsyncThunk(
   }
 );
 
+export const reviewSalary = createAsyncThunk(
+  'payroll/review',
+  async ({ id, comment = '' }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/payroll/${id}/review`, { approve: true, comment });
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message);
+    }
+  }
+);
+
 export const markAsPaid = createAsyncThunk(
   'payroll/markPaid',
   async (id, { rejectWithValue }) => {
@@ -104,6 +116,10 @@ const payrollSlice = createSlice({
       .addCase(processPayroll.rejected, (state, action) => {
         state.processing = false;
         state.error = action.payload;
+      })
+      .addCase(reviewSalary.fulfilled, (state, action) => {
+        const idx = state.allRecords.findIndex(r => r._id === action.payload._id);
+        if (idx !== -1) state.allRecords[idx] = action.payload;
       })
       .addCase(markAsPaid.fulfilled, (state, action) => {
         const idx = state.allRecords.findIndex(r => r._id === action.payload._id);

@@ -279,7 +279,7 @@ const EmployeeForm = () => {
                 {...register("role")}
               >
                 <option value="employee">Employee</option>
-                <option value="hr">HR Manager</option>
+                <option value="hr">HR</option>
                 <option value="admin">Admin</option>
               </SelectField>
             ) : isEdit ? (
@@ -288,7 +288,7 @@ const EmployeeForm = () => {
                   Role
                 </p>
                 <p className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
-                  {selected?.role === "hr" ? "HR Manager" : selected?.role === "admin" ? "Admin" : "Employee"}
+                  {selected?.role === "hr" ? "HR" : selected?.role === "admin" ? "Admin" : "Employee"}
                 </p>
               </div>
             ) : null}

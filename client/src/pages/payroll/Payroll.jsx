@@ -14,6 +14,7 @@ import {
   fetchAllPayroll,
   fetchMyPayroll,
   processPayroll,
+  reviewSalary,
   markAsPaid,
 } from "../../features/payroll/payrollSlice";
 import { fetchEmployees } from "../../features/employees/employeeSlice";
@@ -24,6 +25,7 @@ import Modal from "../../components/common/Modal";
 import Button from "../../components/common/Button";
 import { formatCurrency } from "../../utils/helpers";
 import { MONTHS } from "../../utils/constants";
+import api from "../../services/api";
 
 const statusColor = { draft: "gray", processed: "blue", paid: "green" };
 
@@ -42,6 +44,7 @@ const Payroll = () => {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [processModal, setProcessModal] = useState(false);
+  const [batchGenerating, setBatchGenerating] = useState(false);
   const [viewModal, setViewModal] = useState({ open: false, record: null });
   const [ctcSalary, setCtcSalary] = useState("");
   const [ctcResult, setCtcResult] = useState(null);
@@ -49,8 +52,6 @@ const Payroll = () => {
     employeeId: "",
     month: now.getMonth() + 1,
     year: now.getFullYear(),
-    bonus: 0,
-    overtimePay: 0,
   });
 
   useEffect(() => {
@@ -69,9 +70,57 @@ const Payroll = () => {
     }
     const res = await dispatch(processPayroll(processForm));
     if (!res.error) {
-      toast.success("Payroll processed!");
+      toast.success("Salary draft generated. Review it before finalizing.");
       setProcessModal(false);
+      setActiveTab("records");
     } else toast.error(res.payload || "Failed");
+  };
+
+  const handleGenerateMonth = async () => {
+    setBatchGenerating(true);
+    try {
+      const response = await api.get('/attendance/monthly', {
+        params: { month: selectedMonth, year: selectedYear },
+      });
+      const attendanceRows = response.data.data || [];
+      if (!attendanceRows.length) {
+        toast.error('No confirmed imported attendance found for this month.');
+        return;
+      }
+      if (!window.confirm(`Generate salary drafts for ${attendanceRows.length} imported employees for ${MONTHS[selectedMonth - 1]} ${selectedYear}? Existing salary records will be left unchanged.`)) return;
+
+      let generated = 0;
+      const failures = [];
+      for (const row of attendanceRows) {
+        const employeeId = row.employee?._id || row.employee;
+        if (!employeeId) {
+          failures.push(`${row.employeeNameSnapshot}: employee profile unavailable`);
+          continue;
+        }
+        const result = await dispatch(processPayroll({ employeeId, month: selectedMonth, year: selectedYear }));
+        if (result.error) failures.push(`${row.employeeNameSnapshot}: ${result.payload || 'could not generate'}`);
+        else generated += 1;
+      }
+      await dispatch(fetchAllPayroll({ month: selectedMonth, year: selectedYear }));
+      if (generated) toast.success(`${generated} salary draft${generated === 1 ? '' : 's'} generated for Admin review.`);
+      if (failures.length) toast.error(`${failures.length} employee${failures.length === 1 ? '' : 's'} skipped. First issue: ${failures[0]}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to generate this month’s salary drafts.');
+    } finally {
+      setBatchGenerating(false);
+    }
+  };
+
+  const handleReviewSalary = async (record) => {
+    const approved = window.confirm(
+      `Finalize ${record.employee?.firstName || "this employee"}'s ${MONTHS[record.month - 1]} ${record.year} salary draft for ${formatCurrency(record.netSalary)}? This will lock the reviewed salary for employee/HR visibility.`,
+    );
+    if (!approved) return;
+    const result = await dispatch(reviewSalary({ id: record._id, comment: "Reviewed and approved by Admin" }));
+    if (!result.error) {
+      toast.success("Salary reviewed and finalized.");
+      setViewModal({ open: false, record: null });
+    } else toast.error(result.payload || "Unable to finalize salary.");
   };
 
   const handleMarkPaid = async (id) => {
@@ -109,7 +158,7 @@ const Payroll = () => {
   const paidCount = allRecords.filter((r) => r.status === "paid").length;
 
   const tabs = [
-    ...(isAdminOrHR ? [{ id: "records", label: isAdmin ? "Payroll Records" : "Finalized Reports" }] : []),
+    ...(isAdminOrHR ? [{ id: "records", label: isAdmin ? "Salary Review" : "Finalized Reports" }] : []),
     ...((isAdmin || isEmployee) ? [{ id: "my-payslips", label: "My Payslips" }] : []),
     ...(isAdmin ? [{ id: "ctc", label: "CTC Calc" }] : []),
   ];
@@ -129,8 +178,8 @@ const Payroll = () => {
         {isAdmin && (
           <Button onClick={() => setProcessModal(true)} size="sm">
             <DollarSign className="w-4 h-4" />{" "}
-            <span className="hidden sm:inline">Process Payroll</span>
-            <span className="sm:hidden">Process</span>
+            <span className="hidden sm:inline">Generate Salary Draft</span>
+            <span className="sm:hidden">Generate</span>
           </Button>
         )}
       </div>
@@ -209,15 +258,20 @@ const Payroll = () => {
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                {[2024, 2025, 2026].map((y) => (
+                {Array.from({ length: 7 }, (_, index) => new Date().getFullYear() - 3 + index).map((y) => (
                   <option key={y} value={y}>
                     {y}
                   </option>
                 ))}
               </select>
               <span className="text-xs sm:text-sm text-gray-500">
-                {allRecords.length} records
+                {allRecords.length} salary records
               </span>
+              {isAdmin && (
+                <Button size="sm" onClick={handleGenerateMonth} loading={batchGenerating} disabled={batchGenerating || loading}>
+                  <Calculator className="h-4 w-4" /> Generate drafts for imported employees
+                </Button>
+              )}
             </div>
             {loading ? (
               <div className="flex justify-center py-10">
@@ -277,7 +331,7 @@ const Payroll = () => {
                             }
                             className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors"
                           >
-                            <Eye className="w-3 h-3" /> View
+                            <Eye className="w-3 h-3" /> {isAdmin && r.status === "draft" ? "Review" : "View"}
                           </button>
                           {r.status === "processed" && (
                             <button
@@ -569,7 +623,7 @@ const Payroll = () => {
       <Modal
         isOpen={processModal}
         onClose={() => setProcessModal(false)}
-        title="Process Payroll"
+        title="Generate Salary Draft"
         size="sm"
       >
         <div className="space-y-4">
@@ -628,7 +682,7 @@ const Payroll = () => {
                 }
                 className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                {[2024, 2025, 2026].map((y) => (
+                {Array.from({ length: 7 }, (_, index) => new Date().getFullYear() - 3 + index).map((y) => (
                   <option key={y} value={y}>
                     {y}
                   </option>
@@ -636,39 +690,8 @@ const Payroll = () => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Bonus (₹)
-              </label>
-              <input
-                type="number"
-                value={processForm.bonus}
-                onChange={(e) =>
-                  setProcessForm((f) => ({
-                    ...f,
-                    bonus: Number(e.target.value),
-                  }))
-                }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Overtime (₹)
-              </label>
-              <input
-                type="number"
-                value={processForm.overtimePay}
-                onChange={(e) =>
-                  setProcessForm((f) => ({
-                    ...f,
-                    overtimePay: Number(e.target.value),
-                  }))
-                }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
+          <div className="rounded-lg bg-blue-50 p-3 text-xs text-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+            This creates a salary draft from the confirmed monthly attendance and the effective Salary Rules version. Review and finalize it before it becomes visible as a payslip. Overtime pay is disabled; bonus and other components must be configured in Salary Rules.
           </div>
           <div className="flex gap-3">
             <Button
@@ -676,7 +699,7 @@ const Payroll = () => {
               onClick={handleProcess}
               loading={processing}
             >
-              Process
+              Generate Draft
             </Button>
             <Button variant="secondary" onClick={() => setProcessModal(false)}>
               Cancel
@@ -689,7 +712,7 @@ const Payroll = () => {
       <Modal
         isOpen={viewModal.open}
         onClose={() => setViewModal({ open: false, record: null })}
-        title="Payslip"
+        title={viewModal.record?.status === "draft" ? "Salary Review" : "Salary Details"}
         size="lg"
       >
         {viewModal.record && (
@@ -729,6 +752,28 @@ const Payroll = () => {
                 </div>
               ))}
             </div>
+            {viewModal.record.calculationSnapshot && (
+              <div className="space-y-2 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <div className="flex flex-wrap justify-between gap-2 text-sm">
+                  <span className="text-gray-500">Rule version</span>
+                  <span className="font-medium text-gray-900 dark:text-white">v{viewModal.record.payrollRuleVersion}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300 sm:grid-cols-4">
+                  <span>Late marks: {viewModal.record.calculationSnapshot.result.lateComingCount}</span>
+                  <span>Late LOP: {viewModal.record.calculationSnapshot.result.lateLopDays} days</span>
+                  <span>LOP days: {viewModal.record.lopDays}</span>
+                  <span>OT: {viewModal.record.calculationSnapshot.result.overtimeMinutes} min (₹0 pay)</span>
+                </div>
+                {viewModal.record.calculationSnapshot.warnings?.length > 0 && (
+                  <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                    <p className="mb-1 font-semibold">Source PDF / calculation warnings</p>
+                    <ul className="list-disc space-y-1 pl-4">
+                      {viewModal.record.calculationSnapshot.warnings.map((warning, index) => <li key={`${index}-${warning}`}>{warning}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
               <div>
                 <div className="bg-green-50 dark:bg-green-900/10 px-4 py-2">
@@ -736,13 +781,19 @@ const Payroll = () => {
                     Earnings
                   </p>
                 </div>
-                {[
-                  ["Basic Salary", viewModal.record.basicSalary],
-                  ["HRA", viewModal.record.hra],
-                  ["Conveyance", viewModal.record.conveyanceAllowance],
-                  ["Medical", viewModal.record.medicalAllowance],
-                  ["Special Allow.", viewModal.record.specialAllowance],
-                ].map(([l, v]) => (
+                {(viewModal.record.calculationSnapshot
+                  ? [
+                    ["Basic Salary", viewModal.record.basicSalary],
+                    ...viewModal.record.calculationSnapshot.result.components.filter((component) => component.type === 'earning').map((component) => [component.name, component.amount]),
+                  ]
+                  : [
+                    ["Basic Salary", viewModal.record.basicSalary],
+                    ["HRA", viewModal.record.hra],
+                    ["Conveyance", viewModal.record.conveyanceAllowance],
+                    ["Medical", viewModal.record.medicalAllowance],
+                    ["Special Allow.", viewModal.record.specialAllowance],
+                  ]
+                ).map(([l, v]) => (
                   <div
                     key={l}
                     className="flex justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-sm"
@@ -766,12 +817,18 @@ const Payroll = () => {
                     Deductions
                   </p>
                 </div>
-                {[
-                  ["EPF (12%)", viewModal.record.epfEmployee],
-                  ["ESIC (0.75%)", viewModal.record.esicEmployee],
-                  ["Professional Tax", viewModal.record.professionalTax],
-                  ["LOP Deduction", viewModal.record.lopDeduction],
-                ].map(([l, v]) => (
+                {(viewModal.record.calculationSnapshot
+                  ? [
+                    ["Attendance / late LOP", viewModal.record.lopDeduction],
+                    ...viewModal.record.calculationSnapshot.result.components.filter((component) => component.type === 'deduction').map((component) => [component.name, component.amount]),
+                  ]
+                  : [
+                    ["EPF (12%)", viewModal.record.epfEmployee],
+                    ["ESIC (0.75%)", viewModal.record.esicEmployee],
+                    ["Professional Tax", viewModal.record.professionalTax],
+                    ["LOP Deduction", viewModal.record.lopDeduction],
+                  ]
+                ).map(([l, v]) => (
                   <div
                     key={l}
                     className="flex justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-sm"
@@ -805,12 +862,19 @@ const Payroll = () => {
                 {formatCurrency(viewModal.record.netSalary)}
               </p>
             </div>
-            <button
-              onClick={() => window.print()}
-              className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              🖨 Print / Save as PDF
-            </button>
+            {isAdmin && viewModal.record.status === "draft" && (
+              <Button className="w-full" onClick={() => handleReviewSalary(viewModal.record)}>
+                Review & Finalize Salary
+              </Button>
+            )}
+            {viewModal.record.finalizedAt && (
+              <button
+                onClick={() => window.print()}
+                className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                🖨 Print / Save as PDF
+              </button>
+            )}
           </div>
         )}
       </Modal>

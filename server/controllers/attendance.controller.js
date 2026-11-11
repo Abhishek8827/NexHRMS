@@ -7,6 +7,7 @@ import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import dayjs from 'dayjs';
+import mongoose from 'mongoose';
 import {
   getHalfDayThresholdMinutes,
   getLateComingConversion,
@@ -268,11 +269,23 @@ export const getMonthlyAttendance = asyncHandler(async (req, res) => {
   }
 
   const filter = { month, year };
-  if (req.user.role === 'employee') filter.employee = req.user._id;
-  else if (req.query.employeeId) filter.employeeIdSnapshot = req.query.employeeId;
+  if (req.user.role === 'employee') {
+    filter.employee = req.user._id;
+  } else if (req.query.employee) {
+    if (!mongoose.Types.ObjectId.isValid(req.query.employee)) {
+      throw new ApiError(400, 'Provide a valid employee selection');
+    }
+    filter.employee = req.query.employee;
+  } else if (req.query.employeeId) {
+    filter.employeeIdSnapshot = req.query.employeeId;
+  }
 
   const records = await AttendanceMonth.find(filter)
-    .populate('employee', 'firstName lastName employeeId attendanceCode department designation')
+    .populate({
+      path: 'employee',
+      select: 'firstName lastName employeeId attendanceCode department designation',
+      populate: { path: 'department', select: 'name code' },
+    })
     .populate('sourceImport', 'fileName reportMonthLabel status')
     .sort({ employeeNameSnapshot: 1 });
 
@@ -473,6 +486,12 @@ export const getAllAttendance = asyncHandler(async (req, res) => {
 
   const filter = { date: { $gte: startDate, $lte: endDate } };
   if (status) filter.status = status;
+  if (req.query.employee) {
+    if (!mongoose.Types.ObjectId.isValid(req.query.employee)) {
+      throw new ApiError(400, 'Provide a valid employee selection');
+    }
+    filter.employee = req.query.employee;
+  }
 
   const records = await Attendance.find(filter)
     .populate('employee', 'firstName lastName employeeId department designation')

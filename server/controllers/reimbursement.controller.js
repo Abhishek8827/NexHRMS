@@ -3,7 +3,6 @@ import ApiResponse from '../utils/ApiResponse.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { createNotification } from './notification.controller.js';
-import User from '../models/User.model.js'
 
 // ─────────────────────────────────────────────────────────
 // GET /api/v1/reimbursements/my
@@ -62,34 +61,16 @@ export const createReimbursement = asyncHandler(async (req, res) => {
     employee: req.user._id,
   });
 
-  // ── NOTIFICATION FLOW ──────────────────────────────────
-  // Always notify Admin and HR
- // After reimbursement created — fetch manager separately
-const fullUser = await User.findById(req.user._id).select('manager');
-
-await createNotification({
-  type: 'general',
-  title: '💰 New Reimbursement Request',
-  message: `${req.user.firstName} ${req.user.lastName} submitted a ₹${Number(amount).toLocaleString('en-IN')} ${category} reimbursement request`,
-  link: '/reimbursements',
-  recipientRoles: ['admin', 'hr'],
-  recipients: fullUser?.manager ? [fullUser.manager] : [],
-  createdBy: req.user._id,
-  data: { reimbursementId: reimbursement._id },
-});
-
-  // Also notify direct manager if employee has one
-  if (req.user.manager) {
-    await createNotification({
-      type: 'general',
-      title: '💰 Team Reimbursement Request',
-      message: `${req.user.firstName} ${req.user.lastName} submitted a ₹${Number(amount).toLocaleString('en-IN')} ${category} reimbursement request`,
-      link: '/reimbursements',
-      recipients: [req.user.manager],
-      createdBy: req.user._id,
-      data: { reimbursementId: reimbursement._id },
-    });
-  }
+  // Requests are routed to Admin/HR only; the legacy Manager workflow is no longer active.
+  await createNotification({
+    type: 'general',
+    title: '💰 New Reimbursement Request',
+    message: `${req.user.firstName} ${req.user.lastName} submitted a ₹${Number(amount).toLocaleString('en-IN')} ${category} reimbursement request`,
+    link: '/reimbursements',
+    recipientRoles: ['admin', 'hr'],
+    createdBy: req.user._id,
+    data: { reimbursementId: reimbursement._id },
+  });
 
   const populated = await Reimbursement.findById(reimbursement._id)
     .populate('employee', 'firstName lastName employeeId');

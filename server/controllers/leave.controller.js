@@ -1,6 +1,5 @@
 import Leave from '../models/Leave.model.js';
 import Attendance from '../models/Attendance.model.js';
-import User from '../models/User.model.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -69,22 +68,16 @@ export const applyLeave = asyncHandler(async (req, res) => {
   const populated = await Leave.findById(leave._id)
     .populate('employee', 'firstName lastName employeeId');
 
-  // ── NOTIFICATION: Notify Admin + HR + Manager ──────────
-  // Admin and HR always see it
-  // Manager sees it because employees are under a manager
-  // After leave is created — fetch manager separately
-const fullUser = await User.findById(req.user._id).select('manager');
-
-await createNotification({
-  type: 'leave_applied',
-  title: 'New Leave Request',
-  message: `${req.user.firstName} ${req.user.lastName} applied for ${leaveType.replace(/-/g, ' ')} leave (${numberOfDays} day${numberOfDays > 1 ? 's' : ''})`,
-  link: '/leaves',
-  recipientRoles: ['admin', 'hr'],
-  recipients: fullUser?.manager ? [fullUser.manager] : [],
-  createdBy: req.user._id,
-  data: { leaveId: leave._id },
-});
+  // Requests are routed to the Admin/HR operational group; there is no Manager role.
+  await createNotification({
+    type: 'leave_applied',
+    title: 'New Leave Request',
+    message: `${req.user.firstName} ${req.user.lastName} applied for ${leaveType.replace(/-/g, ' ')} leave (${numberOfDays} day${numberOfDays > 1 ? 's' : ''})`,
+    link: '/leaves',
+    recipientRoles: ['admin', 'hr'],
+    createdBy: req.user._id,
+    data: { leaveId: leave._id },
+  });
 
   return res.status(201).json(
     new ApiResponse(201, populated, 'Leave application submitted successfully')
@@ -145,11 +138,11 @@ export const getAllLeaves = asyncHandler(async (req, res) => {
 
 // ─────────────────────────────────────────────────────────
 // PUT /api/v1/leaves/:id/approve
-// Who can call: admin, hr (manager only for their team)
+// Who can call: Admin/HR only
 // ─────────────────────────────────────────────────────────
 export const approveLeave = asyncHandler(async (req, res) => {
   const leave = await Leave.findById(req.params.id)
-    .populate('employee', 'firstName lastName _id manager');
+    .populate('employee', 'firstName lastName _id');
 
   if (!leave) throw new ApiError(404, 'Leave not found');
 

@@ -104,10 +104,10 @@ const Attendance = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-            My Attendance
+            {isAdmin ? "Attendance Overview" : "My Attendance"}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Track your attendance and working hours
+            {isAdmin ? "Review imported and daily attendance by month and employee" : "Track your attendance and working hours"}
           </p>
         </div>
         {isAdminOrHR && (
@@ -120,6 +120,8 @@ const Attendance = () => {
           </button>
         )}
       </div>
+
+      {isAdmin && <HRAttendanceOverview />}
 
       {/* Today Punch Card */}
       {isCurrentMonth && isAdmin && (

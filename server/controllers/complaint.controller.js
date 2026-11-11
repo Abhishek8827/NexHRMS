@@ -1,5 +1,4 @@
 import Complaint from '../models/Complaint.model.js';
-import User from '../models/User.model.js';  // ← THIS WAS MISSING — caused crash
 import ApiResponse from '../utils/ApiResponse.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -56,10 +55,6 @@ export const createComplaint = asyncHandler(async (req, res) => {
     status: 'open',
   });
 
-  // Fetch fresh user with manager field populated
-  // req.user from auth middleware may not have manager populated
-  const fullUser = await User.findById(req.user._id).select('manager firstName lastName');
-
   const reporterName = isAnonymous
     ? 'An employee (anonymous)'
     : `${req.user.firstName} ${req.user.lastName}`;
@@ -76,20 +71,6 @@ export const createComplaint = asyncHandler(async (req, res) => {
       data: { complaintId: complaint._id },
     });
 
-    // Also notify direct manager if the employee has one
-    if (fullUser?.manager) {
-      await createNotification({
-        type: 'complaint_raised',
-        title: '⚠️ Team Member Filed a Complaint',
-        message: isAnonymous
-          ? `A team member filed a complaint: "${subject}"`
-          : `${req.user.firstName} ${req.user.lastName} filed a complaint: "${subject}"`,
-        link: '/complaints',
-        recipients: [fullUser.manager],
-        createdBy: req.user._id,
-        data: { complaintId: complaint._id },
-      });
-    }
   } catch (notifError) {
     // Log but don't fail the request
     console.error('Notification failed (complaint):', notifError.message);

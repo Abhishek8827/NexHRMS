@@ -470,8 +470,8 @@ const Dashboard = () => {
   };
 
   const roleLabel = {
-    admin: "⚡ Super Admin",
-    hr: "👥 HR Manager",
+    admin: "⚡ Admin",
+    hr: "👥 HR",
     employee: "💼 Employee",
   };
 

@@ -344,7 +344,7 @@ const Complaints = () => {
               htmlFor="isAnonymous"
               className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
             >
-              Submit anonymously — your identity will be hidden from HR/Manager
+              Submit anonymously — your identity will be hidden from Admin/HR
             </label>
           </div>
 
