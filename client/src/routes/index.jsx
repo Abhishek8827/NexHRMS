@@ -19,14 +19,10 @@ const Attendance = lazy(() => import('../pages/attendance/Attendance'));
 const AttendanceImports = lazy(() => import('../pages/attendance/AttendanceImports'));
 const Leaves = lazy(() => import('../pages/leaves/Leaves'));
 const Payroll = lazy(() => import('../pages/payroll/Payroll'));
-const Recruitment = lazy(() => import('../pages/recruitment/Recruitment'));
-const Tasks = lazy(() => import('../pages/tasks/Tasks'));
-const Performance = lazy(() => import('../pages/performance/Performance'));
 const Reimbursements = lazy(() => import('../pages/reimbursements/Reimbursements'));
 const Complaints = lazy(() => import('../pages/complaints/Complaints'));
 const Reports = lazy(() => import('../pages/reports/Reports'));
 const Profile = lazy(() => import('../pages/profile/Profile'));
-const WorkSchedule = lazy(() => import('../pages/settings/WorkSchedule'));
 const PayrollRules = lazy(() => import('../pages/settings/PayrollRules'));
 const CompanyProfile = lazy(() => import('../pages/company/CompanyProfile'));
 
@@ -71,11 +67,6 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: 'settings/schedules',
-            element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
-            children: [{ index: true, element: <WorkSchedule /> }],
-          },
-          {
             path: 'settings/payroll-rules',
             element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
             children: [{ index: true, element: <PayrollRules /> }],
@@ -92,16 +83,6 @@ const router = createBrowserRouter([
             children: [{ index: true, element: <Leaves /> }],
           },
           {
-            path: 'tasks',
-            element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
-            children: [{ index: true, element: <Tasks /> }],
-          },
-          {
-            path: 'performance',
-            element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
-            children: [{ index: true, element: <Performance /> }],
-          },
-          {
             path: 'reimbursements',
             element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
             children: [{ index: true, element: <Reimbursements /> }],
@@ -112,11 +93,6 @@ const router = createBrowserRouter([
             children: [{ index: true, element: <Complaints /> }],
           },
           { path: 'payroll', element: <Payroll /> },
-          {
-            path: 'recruitment',
-            element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.adminOperations} />,
-            children: [{ index: true, element: <Recruitment /> }],
-          },
           {
             path: 'reports',
             element: <ProtectedRoute allowedRoles={FEATURE_ACCESS.reports} />,

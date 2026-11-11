@@ -905,9 +905,10 @@ Happy coding!
 3. Open **Salary Rules & Holidays** and save an effective-dated rules version. Configure the schedule, grace/late-coming conversion, holiday calendar, absence/half-day weights, leave treatment, and any company-confirmed earnings/deductions. No holiday list or statutory components are prefilled.
 4. In **Payroll → Salary Review**, generate a draft for an employee/month with confirmed attendance. Inspect its calculation snapshot and warnings, then explicitly review/finalize it. Only finalized records are visible to HR/employees; marking paid is a separate Admin action.
 
-The PDF employee mapping seed updates existing HRMS employee accounts only; it does not create login accounts. First run a dry run from the `server` directory:
+The PDF employee mapping seed updates existing HRMS employee accounts only; it does not create login accounts. First validate the bundled seed data without a database connection, then run a database-backed dry run from the `server` directory:
 
 ```bash
+npm run seed:attendance-employees -- --validate-only
 npm run seed:attendance-employees -- --dry-run
 ```
 
@@ -918,6 +919,10 @@ npm run seed:attendance-employees
 ```
 
 The seeder expects the server's normal MongoDB environment to be configured. Never paste `.env` values into chat or commit them.
+
+## Streamlined Admin navigation
+
+The duplicate **Work Schedules** screen and the **Recruitment**, **Tasks**, and **Performance** screens are removed from the client menus and routes. Salary schedule and holiday configuration remains in **Salary Rules & Holidays**. Existing backend endpoints, stored records, and page source are retained for compatibility; no underlying data is deleted.
 
 ## Employee spreadsheet import
 
