@@ -7,15 +7,11 @@ import {
   LayoutDashboard,
   Clock,
   Calendar,
-  CheckSquare,
   Users,
   DollarSign,
-  Briefcase,
-  Star,
   Receipt,
   MessageSquare,
   BarChart2,
-  Settings,
   LogOut,
   X,
   Building2,
@@ -32,7 +28,6 @@ const bottomTabs = [
   { label: "Home", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Attendance", icon: Clock, path: "/attendance" },
   { label: "Leaves", icon: Calendar, path: "/leaves" },
-  { label: "Tasks", icon: CheckSquare, path: "/tasks" },
 ];
 
 // All nav items for the full drawer
@@ -43,14 +38,10 @@ const allNavItems = [
   { label: "Monthly PDF Import", icon: FileText, path: "/attendance/imports", roles: FEATURE_ACCESS.attendanceImport },
   { label: "Leaves", icon: Calendar, path: "/leaves", roles: FEATURE_ACCESS.adminOperations },
   { label: "Payroll", icon: DollarSign, path: "/payroll", roles: FEATURE_ACCESS.payroll },
-  { label: "Recruitment", icon: Briefcase, path: "/recruitment", roles: FEATURE_ACCESS.adminOperations },
-  { label: "Tasks", icon: CheckSquare, path: "/tasks", roles: FEATURE_ACCESS.adminOperations },
-  { label: "Performance", icon: Star, path: "/performance", roles: FEATURE_ACCESS.adminOperations },
   { label: "Reimbursements", icon: Receipt, path: "/reimbursements", roles: FEATURE_ACCESS.adminOperations },
   { label: "Complaints", icon: MessageSquare, path: "/complaints", roles: FEATURE_ACCESS.adminOperations },
   { label: "Reports", icon: BarChart2, path: "/reports", roles: FEATURE_ACCESS.reports },
   { label: "Company", icon: Building2, path: "/company", roles: FEATURE_ACCESS.adminOperations },
-  { label: "Work Schedules", icon: Settings, path: "/settings/schedules", roles: FEATURE_ACCESS.adminOperations },
   { label: "Salary Rules & Holidays", icon: Calendar, path: "/settings/payroll-rules", roles: FEATURE_ACCESS.adminOperations }
 ];
 

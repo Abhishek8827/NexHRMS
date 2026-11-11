@@ -3,11 +3,19 @@ import { readFile } from 'node:fs/promises';
 import mongoose from 'mongoose';
 import connectDB from '../config/db.js';
 import User from '../models/User.model.js';
+import { validateAttendanceSeedRows } from '../utils/attendanceSeedValidation.js';
 
 const DEFAULT_MONTHLY_SALARY = 20000;
 const dryRun = process.argv.includes('--dry-run');
+const validateOnly = process.argv.includes('--validate-only');
 const seedUrl = new URL('./attendanceEmployees.seed.json', import.meta.url);
 const seedRows = JSON.parse(await readFile(seedUrl, 'utf8'));
+const validation = validateAttendanceSeedRows(seedRows);
+if (validateOnly) {
+  console.log('VALIDATION ONLY — no database connection or changes made');
+  console.log(`Seed rows: ${validation.rowCount}; unique codes: ${validation.uniqueCodes}; unique names: ${validation.uniqueNames}`);
+  process.exit(0);
+}
 await connectDB();
 
 const normalizeName = (value = '') => value
@@ -32,6 +40,17 @@ try {
     const byName = employees.filter((employee) =>
       normalizeName(`${employee.firstName} ${employee.lastName}`) === normalizeName(row.name),
     );
+    if (byCode.length === 1 && byName.length === 1
+        && String(byCode[0]._id) !== String(byName[0]._id)) {
+      issues.push({
+        code: row.employeeCode,
+        name: row.name,
+        issue: 'Employee Code and exact name match different HRMS profiles; no update made.',
+        codeMatchedEmployeeId: byCode[0].employeeId,
+        nameMatchedEmployeeId: byName[0].employeeId,
+      });
+      continue;
+    }
     const matches = byCode.length ? byCode : byName;
 
     if (matches.length !== 1) {
